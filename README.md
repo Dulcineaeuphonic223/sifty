@@ -47,8 +47,18 @@ sifty disk duplicates D:\    # find duplicate files and wasted space
 
 # Apps
 sifty apps list --by-size    # installed apps, largest first
-sifty apps startup           # programs that launch at startup
 sifty apps uninstall "App"   # uninstall via winget (preview, then --apply)
+
+# Smart cleanup
+sifty cleanup duplicates D:\Photos   # de-duplicate (keeps one copy each)
+sifty cleanup large C:\Users\you     # biggest files under a path
+sifty cleanup stale --days 180       # old items in Downloads
+
+# Startup & services
+sifty startup list                   # startup programs (enabled/disabled)
+sifty startup disable "Spotify"      # reversible (sifty startup enable …)
+sifty services list                  # curated optional services + state
+sifty --admin services disable DiagTrack   # toggle one (needs admin)
 
 # Updates
 sifty update check           # list available updates (winget)
