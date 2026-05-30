@@ -1,4 +1,4 @@
-"""The `ai` command group — local, private, advisory only."""
+"""`sifty ai` — ask the local AI for maintenance advice (Ollama)."""
 
 from __future__ import annotations
 
@@ -6,10 +6,10 @@ from pathlib import Path
 
 import typer
 
-from ..ai.advisor import summarize_disk
-from ..ai.client import OllamaClient
-from ..console import console, error, success, warn
-from . import disk as disk_mod
+from ...ai.advisor import summarize_disk
+from ...ai.client import OllamaClient
+from ...console import console, error, human_size, success, warn
+from ...core import disk
 
 app = typer.Typer(help="Ask the local AI for maintenance advice (Ollama).")
 
@@ -44,8 +44,8 @@ def ask_cmd(
             raise typer.Exit(1)
         with console.status(f"Scanning {path}…"):
             items = [
-                (entry.name, disk_mod.human_size(size))
-                for entry, size in disk_mod.biggest(path, 20)
+                (entry.name, human_size(size))
+                for entry, size in disk.biggest(path, 20)
             ]
         with console.status("Thinking…"):
             answer = summarize_disk(client, items, question)

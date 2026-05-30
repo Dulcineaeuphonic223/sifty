@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from sifty.commands import organize
+from sifty.core import organize
 
 
 def test_plan_by_type_routes_extensions(tmp_path):

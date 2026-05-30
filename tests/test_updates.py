@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from sifty.commands.updates import parse_upgrade_table
+from sifty.core.updates import parse_upgrade_table
 
 SAMPLE = """\
 Name                     Id                        Version      Available    Source

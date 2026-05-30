@@ -17,26 +17,32 @@ see [CLAUDE.md](../CLAUDE.md); for usage see [README.md](../README.md).
 ## Layered structure
 
 ```text
-            ┌─────────────────────────────────────────┐
-   user →   │ cli.py (Typer)  — arg parsing, printing  │   thin
-            ├─────────────────────────────────────────┤
-            │ commands/*.py   — capability logic       │   testable core
-            │   junk · disk · apps · updates · organize │
-            ├──────────────────┬──────────────────────┤
-            │ safety.py        │ console.py · config.py │   shared infra
-            │ (the gatekeeper) │                        │
-            ├──────────────────┴──────────────────────┤
-            │ ai/  — advisory only, degrades to no-op   │   optional
-            └─────────────────────────────────────────┘
+            ┌──────────────────────┬──────────────────────┐
+   user →   │ cli/ (Typer)         │ tui/ (Textual)       │  thin frontends
+            │ commands/*.py        │ views/*.py           │
+            ├──────────────────────┴──────────────────────┤
+            │ core/  — engine (pure-ish), the gatekeeper   │  testable core
+            │   models · safety · junk · disk · apps ·     │
+            │   updates · organize                         │
+            ├───────────────────────┬──────────────────────┤
+            │ windows/ — OS calls    │ infra/ — config, log │  primitives
+            │ admin·recyclebin·winget│                      │
+            ├───────────────────────┴──────────────────────┤
+            │ ai/  — advisory (+ agentic), degrades to no-op │  optional
+            └──────────────────────────────────────────────┘
 ```
 
-Each `commands/*.py` module follows the same split:
+The split is now **across packages**, not within a file:
 
-- **Core functions** — pure-ish, return data (`scan() -> list[CategoryScan]`,
-  `find_duplicates() -> dict`, `plan_organization() -> list[Move]`). These are
-  what the tests and any future GUI call.
-- **`*_cmd` Typer handlers** — parse options, call the core, render via Rich,
-  handle the dry-run/confirm flow. Never contain business logic worth testing.
+- **`core/<domain>.py`** — pure-ish functions that return data (`scan() ->
+  list[CategoryScan]`, `find_duplicates() -> dict`, `plan_organization() ->
+  list[Move]`). No Typer/Textual; OS access goes through `windows/`. This is what
+  tests, the TUI, and the AI agent all call.
+- **`cli/commands/*.py`** and **`tui/views/*.py`** — thin frontends that parse
+  input / render and call core, handling the dry-run/confirm flow. No business
+  logic worth testing.
+- **`windows/`** — every direct OS call (Send2Trash, winget, registry, UAC).
+- **`infra/`** — config + logging; **`console.py`** — shared Rich helpers.
 
 ## The safety model (the heart of the system)
 
@@ -94,13 +100,15 @@ live. The AI never receives a deletion capability — commands act, the AI advis
 - Safety/junk tests `monkeypatch` the protected-root environment variables and
   `Path.home`, then build fixtures under `tmp_path`. This makes the
   Windows-specific path logic deterministic and runnable on any OS.
-- `send2trash` is monkeypatched in tests so nothing is ever really deleted.
+- `core.safety.send_to_trash` is monkeypatched in tests so nothing is ever
+  really deleted; `windows/` primitives are mocked.
 - The fragile winget parser is tested against a captured sample table.
 
 ## Extension points
 
-- **New capability** → new `commands/<name>.py` with the core/handler split, wired
-  in `cli.py`. (`/add-command-module` scaffolds this.)
+- **New capability** → `core/<name>.py` (logic) + `cli/commands/<name>.py`
+  (handler) + a `tui/views/<name>.py`, wired in `cli/app.py` and the TUI nav.
+  (`/add-command-module` scaffolds this.)
 - **New junk source** → a `JunkCategory` in `junk.py` with its `allow_subtrees`.
   (`/new-junk-category`.)
 - **GUI** → import `commands.*` core functions; no logic needs to move.

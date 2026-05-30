@@ -11,9 +11,9 @@ from pathlib import Path
 
 from textual.widgets import DataTable, SelectionList, Static, Tree
 
-from sifty.commands.apps import InstalledApp
-from sifty.commands.junk import CategoryScan, JunkCategory
-from sifty.commands.updates import Upgrade
+from sifty.core.apps import InstalledApp
+from sifty.core.junk import CategoryScan, JunkCategory
+from sifty.core.updates import Upgrade
 from sifty.tui.app import SECTIONS, SiftyApp
 from sifty.tui.modals import ConfirmModal
 from sifty.tui.views import AppsView, DiskView, HomeView, JunkView, UpdatesView, VIEWS

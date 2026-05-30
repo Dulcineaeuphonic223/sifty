@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from sifty.commands import disk
+from sifty.core import disk
 
 
 def test_biggest_orders_by_size(tmp_path):

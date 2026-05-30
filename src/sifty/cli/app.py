@@ -1,4 +1,4 @@
-"""Sifty command-line entry point."""
+"""Sifty command-line entry point (thin: wires command groups, calls core)."""
 
 from __future__ import annotations
 
@@ -6,11 +6,11 @@ import sys
 
 import typer
 
-from . import __version__
-from .admin import is_admin, relaunch_as_admin
+from .. import __version__
+from ..console import console, error, warn
+from ..infra.logging import get_logger, log_file, setup_logging
+from ..windows.admin import is_admin, relaunch_as_admin
 from .commands import ai_group, apps, disk, junk, organize, updates
-from .console import console, error, warn
-from .logsetup import get_logger, log_file, setup_logging
 
 app = typer.Typer(
     name="sifty",
@@ -49,7 +49,7 @@ def main(
 @app.command("tui")
 def tui_cmd() -> None:
     """Launch the interactive full-screen TUI."""
-    from .tui.app import run  # lazy import: keeps CLI startup fast
+    from ..tui.app import run  # lazy import: keeps CLI startup fast
 
     run()
 
@@ -63,12 +63,12 @@ def version_cmd() -> None:
 @app.command("doctor")
 def doctor_cmd() -> None:
     """Report environment readiness (admin rights, winget, Ollama)."""
-    from .commands.updates import _winget_available
-    from .ai.client import OllamaClient
+    from ..ai.client import OllamaClient
+    from ..windows import winget
 
     admin = is_admin()
     console.print(f"Administrator: {'[green]yes[/green]' if admin else '[yellow]no[/yellow] (some junk/uninstall actions need it)'}")
-    console.print(f"winget: {'[green]available[/green]' if _winget_available() else '[red]missing[/red]'}")
+    console.print(f"winget: {'[green]available[/green]' if winget.available() else '[red]missing[/red]'}")
     client = OllamaClient.from_config()
     console.print(f"Ollama ({client.model}): {'[green]reachable[/green]' if client.is_available() else '[yellow]not running[/yellow]'}")
     console.print(f"Log file: [dim]{log_file()}[/dim]")

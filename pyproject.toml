@@ -29,7 +29,7 @@ dev = [
 ]
 
 [project.scripts]
-sifty = "sifty.cli:entrypoint"
+sifty = "sifty.cli.app:entrypoint"
 
 [tool.setuptools.packages.find]
 where = ["src"]

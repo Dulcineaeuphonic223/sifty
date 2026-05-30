@@ -10,8 +10,8 @@ from textual.containers import Horizontal
 from textual.widgets import Button, SelectionList, Static
 from textual.widgets.selection_list import Selection
 
-from ...admin import is_admin, relaunch_as_admin
-from ...commands import junk
+from ...core import junk
+from ...windows.admin import is_admin, relaunch_as_admin
 from ...console import human_size
 from ..modals import ConfirmModal
 from .base import BaseView

@@ -9,8 +9,8 @@ from textual import work
 from textual.app import ComposeResult
 from textual.widgets import Button, Label, Static
 
-from ...admin import is_admin
-from ...commands import disk, junk
+from ...core import disk, junk
+from ...windows.admin import is_admin
 from ...console import human_size
 from ..widgets import Panel, usage_gauge
 from .base import BaseView

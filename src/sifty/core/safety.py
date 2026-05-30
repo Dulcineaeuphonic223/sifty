@@ -26,9 +26,8 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Iterable, Sequence
 
-from send2trash import send2trash
-
-from .config import audit_log_path
+from ..infra.config import audit_log_path
+from ..windows.recyclebin import send_to_trash
 
 
 class ProtectedPathError(Exception):
@@ -140,7 +139,7 @@ def trash(
     assert_safe(path, allow_subtrees, extra_protected)
     if dry_run:
         return True
-    send2trash(os.fspath(Path(path)))
+    send_to_trash(path)
     audit(f"TRASH {path}")
     return True
 

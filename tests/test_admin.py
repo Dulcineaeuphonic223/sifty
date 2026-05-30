@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import sys
 
-from sifty import admin
+from sifty.windows import admin
 
 
 def test_is_admin_returns_bool():

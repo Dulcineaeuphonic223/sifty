@@ -9,7 +9,7 @@ from textual.app import ComposeResult
 from textual.containers import Horizontal
 from textual.widgets import Button, DataTable, Static
 
-from ...commands import apps as apps_mod
+from ...core import apps as apps_mod
 from ...console import human_size
 from ..modals import ConfirmModal
 from .base import BaseView

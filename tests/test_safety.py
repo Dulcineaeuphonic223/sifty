@@ -11,8 +11,8 @@ from pathlib import Path
 
 import pytest
 
-from sifty import safety
-from sifty.safety import ProtectedPathError, is_protected, trash
+from sifty.core import safety
+from sifty.core.safety import ProtectedPathError, is_protected, trash
 
 
 @pytest.fixture(autouse=True)
@@ -72,7 +72,7 @@ def test_extra_protected_paths(fixed_roots, tmp_path):
 
 def test_trash_dry_run_does_not_delete(monkeypatch, tmp_path):
     called = []
-    monkeypatch.setattr(safety, "send2trash", lambda p: called.append(p))
+    monkeypatch.setattr(safety, "send_to_trash", lambda p: called.append(p))
     target = tmp_path / "scratch" / "x.tmp"
     target.parent.mkdir(parents=True)
     target.write_text("data")
@@ -84,17 +84,17 @@ def test_trash_dry_run_does_not_delete(monkeypatch, tmp_path):
 
 def test_trash_apply_calls_send2trash(monkeypatch, tmp_path):
     called = []
-    monkeypatch.setattr(safety, "send2trash", lambda p: called.append(p))
+    monkeypatch.setattr(safety, "send_to_trash", lambda p: called.append(p))
     monkeypatch.setattr(safety, "audit", lambda msg: None)
     target = tmp_path / "scratch" / "x.tmp"
     target.parent.mkdir(parents=True)
     target.write_text("data")
 
     assert trash(target, dry_run=False) is True
-    assert called == [os.fspath(target)]
+    assert called == [target]
 
 
 def test_trash_refuses_protected_even_with_apply(fixed_roots, monkeypatch):
-    monkeypatch.setattr(safety, "send2trash", lambda p: (_ for _ in ()).throw(AssertionError("must not delete")))
+    monkeypatch.setattr(safety, "send_to_trash", lambda p: (_ for _ in ()).throw(AssertionError("must not delete")))
     with pytest.raises(ProtectedPathError):
         trash(fixed_roots / "Windows" / "System32", dry_run=False)

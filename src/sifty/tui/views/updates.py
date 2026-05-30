@@ -9,7 +9,7 @@ from textual.app import ComposeResult
 from textual.containers import Horizontal
 from textual.widgets import Button, DataTable, Static
 
-from ...commands import updates as updates_mod
+from ...core import updates as updates_mod
 from ..modals import ConfirmModal
 from .base import BaseView
 

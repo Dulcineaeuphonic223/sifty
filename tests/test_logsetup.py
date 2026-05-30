@@ -8,7 +8,7 @@ import sys
 
 import pytest
 
-from sifty import logsetup
+from sifty.infra import logging as logsetup
 
 
 @pytest.fixture

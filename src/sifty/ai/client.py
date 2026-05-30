@@ -10,7 +10,7 @@ from dataclasses import dataclass
 
 import httpx
 
-from ..config import load_config
+from ..infra.config import load_config
 
 
 class OllamaUnavailable(Exception):

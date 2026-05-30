@@ -1,32 +1,21 @@
-"""Junk scanning and cleanup.
+"""Junk scanning and cleanup (engine).
 
 Each junk *category* points at one or more directories whose top-level entries
 are safe to send to the Recycle Bin. The directory itself is registered as an
-allowed subtree so :func:`sifty.safety.trash` permits its contents even when
+allowed subtree so :func:`sifty.core.safety.trash` permits its contents even when
 the directory sits inside a protected root (e.g. ``C:\\Windows\\Temp``).
 """
 
 from __future__ import annotations
 
 import os
-from dataclasses import dataclass, field
 from pathlib import Path
 
-import typer
-from rich.table import Table
+from ..infra.config import load_config
+from .models import CategoryScan, JunkCategory
+from .safety import ProtectedPathError, trash
 
-from ..config import load_config
-from ..console import confirm, console, human_size, success, warn
-from ..safety import ProtectedPathError, trash
-
-
-@dataclass
-class JunkCategory:
-    key: str
-    label: str
-    description: str
-    roots: list[Path] = field(default_factory=list)
-    requires_admin: bool = False
+__all__ = ["JunkCategory", "CategoryScan", "junk_categories", "scan", "clean"]
 
 
 def _env_path(name: str) -> Path | None:
@@ -115,14 +104,6 @@ def _dir_size(path: Path) -> tuple[int, int]:
     return total, count
 
 
-@dataclass
-class CategoryScan:
-    category: JunkCategory
-    size: int
-    file_count: int
-    existing_roots: list[Path]
-
-
 def scan(config=None, only: set[str] | None = None) -> list[CategoryScan]:
     """Measure each junk category. ``only`` filters by category key."""
     results: list[CategoryScan] = []
@@ -195,67 +176,3 @@ def clean(
                     skipped.append(f"{entry}: {exc}")
 
     return bytes_freed, items, skipped
-
-
-# --------------------------------------------------------------------------- #
-# Typer command group
-# --------------------------------------------------------------------------- #
-
-app = typer.Typer(help="Scan and clean junk files (temp, caches, update cache).")
-
-
-@app.command("scan")
-def scan_cmd(
-    category: list[str] = typer.Option(None, "--category", "-c", help="Limit to category key(s)."),
-) -> None:
-    """Show how much junk each category holds, without deleting anything."""
-    only = set(category) if category else None
-    results = scan(only=only)
-
-    table = Table(title="Junk scan")
-    table.add_column("Category")
-    table.add_column("Key", style="dim")
-    table.add_column("Files", justify="right")
-    table.add_column("Size", justify="right")
-    total = 0
-    for r in results:
-        total += r.size
-        admin = " [yellow](admin)[/yellow]" if r.category.requires_admin else ""
-        table.add_row(r.category.label + admin, r.category.key, f"{r.file_count:,}", human_size(r.size))
-    table.add_section()
-    table.add_row("[bold]Total reclaimable[/bold]", "", "", f"[bold]{human_size(total)}[/bold]")
-    console.print(table)
-    console.print("\nRun [cyan]sifty junk clean[/cyan] to preview removal (dry-run by default).")
-
-
-@app.command("clean")
-def clean_cmd(
-    category: list[str] = typer.Option(None, "--category", "-c", help="Limit to category key(s)."),
-    apply: bool = typer.Option(False, "--apply", help="Actually move items to the Recycle Bin."),
-    yes: bool = typer.Option(False, "--yes", "-y", help="Skip the confirmation prompt."),
-) -> None:
-    """Move junk to the Recycle Bin. Dry-run unless --apply is given."""
-    only = set(category) if category else None
-
-    # Always preview first.
-    preview_bytes, preview_items, _ = clean(only=only, dry_run=True)
-    if preview_items == 0:
-        success("Nothing to clean — you're already tidy.")
-        return
-
-    console.print(
-        f"Found [bold]{preview_items:,}[/bold] items totalling "
-        f"[bold]{human_size(preview_bytes)}[/bold]."
-    )
-    if not apply:
-        console.print("[dim]Dry-run — nothing was deleted. Re-run with --apply to remove.[/dim]")
-        return
-
-    if not confirm(f"Move {preview_items:,} items ({human_size(preview_bytes)}) to the Recycle Bin?", assume_yes=yes):
-        warn("Cancelled.")
-        return
-
-    freed, items, skipped = clean(only=only, dry_run=False)
-    success(f"Sent {items:,} items ({human_size(freed)}) to the Recycle Bin.")
-    if skipped:
-        warn(f"{len(skipped)} item(s) skipped (in use or protected).")

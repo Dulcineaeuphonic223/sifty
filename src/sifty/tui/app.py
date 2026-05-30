@@ -15,7 +15,7 @@ from textual.theme import Theme
 from textual.widgets import Footer, Header, Label, ListItem, ListView
 from textual.worker import Worker, WorkerState
 
-from ..admin import is_admin, relaunch_as_admin
+from ..windows.admin import is_admin, relaunch_as_admin
 from .views import VIEWS
 
 logger = logging.getLogger("sifty.tui")
@@ -119,7 +119,7 @@ class SiftyApp(App):
 
 def run() -> None:
     """Entry point used by the ``sifty tui`` command."""
-    from ..logsetup import get_logger, setup_logging
+    from ..infra.logging import get_logger, setup_logging
 
     setup_logging()
     try:

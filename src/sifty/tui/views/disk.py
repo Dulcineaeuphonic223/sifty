@@ -10,7 +10,7 @@ from textual.app import ComposeResult
 from textual.containers import Horizontal
 from textual.widgets import Button, Input, Static, Tree
 
-from ...commands import disk
+from ...core import disk
 from ...console import human_size
 from ..widgets import Panel
 from .base import BaseView
