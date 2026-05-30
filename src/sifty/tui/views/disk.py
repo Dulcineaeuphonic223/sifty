@@ -28,16 +28,16 @@ class DiskView(BaseView):
             yield Button("Browse…", id="browse")
             yield Button("Analyze", id="analyze", variant="primary")
             yield Button("Find duplicates", id="dupes")
-        yield Panel(Tree("(no analysis yet)", id="biggest-tree"), title="Biggest items")
+        yield Panel(Tree("(no analysis yet)", id="biggest-tree"), title="Biggest items", id="biggest-panel")
         yield Static("", id="disk-status", classes="status")
 
     def on_mount(self) -> None:
-        if self.workers_enabled():
-            self._start_analyze()
-        else:
-            self._status("Choose a folder and press Analyze.")
+        # No auto-analysis — only scan when the user asks (Analyze / Browse).
+        self.query_one("#biggest-panel").display = False
+        self._status("Choose a folder and press Analyze.")
 
     def _start_analyze(self) -> None:
+        self.query_one("#biggest-panel").display = True
         self._status(f"Analyzing {self._path()}…")
         self.query_one("#biggest-tree", Tree).loading = True
         self.analyze()
@@ -62,17 +62,20 @@ class DiskView(BaseView):
 
     def _finish_error(self, exc: Exception) -> None:
         self.query_one("#biggest-tree", Tree).loading = False
+        self.query_one("#biggest-panel").display = False
         self._status(f"Failed: {exc}")
 
     def _show_biggest(self, path: Path, items) -> None:
         tree = self.query_one("#biggest-tree", Tree)
         tree.loading = False
+        if not items:
+            self.query_one("#biggest-panel").display = False
+            self._status(f"No files found in {path}.")
+            return
+        self.query_one("#biggest-panel").display = True
         tree.clear()
         tree.root.set_label(str(path))
         tree.root.expand()
-        if not items:
-            self._status(f"No files found in {path}.")
-            return
         for entry, size in items:
             suffix = "\\" if entry.is_dir() else ""
             tree.root.add_leaf(f"{entry.name}{suffix}  —  {human_size(size)}")

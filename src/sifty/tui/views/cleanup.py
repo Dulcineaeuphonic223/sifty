@@ -37,7 +37,7 @@ class CleanupView(BaseView):
             yield Button("Duplicates", id="mode-duplicates", variant="primary")
             yield Button("Large files", id="mode-large")
             yield Button("Stale downloads", id="mode-stale")
-        yield Panel(DataTable(id="cleanup-table"), title="Results")
+        yield Panel(DataTable(id="cleanup-table"), title="Results", id="cleanup-panel")
         with Horizontal(classes="actions"):
             yield Button("Clear marks", id="clear-marks")
             yield Button("Clean selected", id="clean", variant="warning")
@@ -50,6 +50,7 @@ class CleanupView(BaseView):
         table = self.query_one("#cleanup-table", DataTable)
         table.cursor_type = "row"
         self._cols = table.add_columns("", "Size", "Path")
+        self.query_one("#cleanup-panel").display = False  # hidden until a scan finds something
 
     def _path(self) -> Path:
         return Path(self.query_one("#cleanup-path", Input).value or str(Path.home())).expanduser()
@@ -63,6 +64,7 @@ class CleanupView(BaseView):
         if bid.startswith("mode-"):
             self._mode = bid.removeprefix("mode-")
             self._status(f"Scanning ({self._mode})…")
+            self.query_one("#cleanup-panel").display = True
             self.query_one("#cleanup-table", DataTable).loading = True
             self.scan()
         elif bid == "clear-marks":
@@ -93,12 +95,18 @@ class CleanupView(BaseView):
 
     def _scan_failed(self, exc: Exception) -> None:
         self.query_one("#cleanup-table", DataTable).loading = False
+        self.query_one("#cleanup-panel").display = False
         self._status(f"Failed: {exc}")
 
     def _populate(self, rows: list[tuple[Path, int]], premark: bool) -> None:
         self._rows = rows
         self._marked = {str(p) for p, _s in rows} if premark else set()
         self.query_one("#cleanup-table", DataTable).loading = False
+        if not rows:
+            self.query_one("#cleanup-panel").display = False
+            self._status(f"Nothing found ({self._mode}).")
+            return
+        self.query_one("#cleanup-panel").display = True
         self._rebuild_table()
 
     def _rebuild_table(self) -> None:
