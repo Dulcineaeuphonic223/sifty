@@ -33,7 +33,12 @@ class UpdatesView(BaseView):
         table.cursor_type = "row"
         table.add_columns("Name", "Id", "Current", "Available")
         if self.workers_enabled():
-            self.check()
+            self._start_check()
+
+    def _start_check(self) -> None:
+        self._status("Checking for updates… (winget can take ~20 seconds)")
+        self.query_one("#updates-table", DataTable).loading = True
+        self.check()
 
     @work(thread=True, exclusive=True)
     def check(self) -> None:
@@ -41,13 +46,18 @@ class UpdatesView(BaseView):
             ups = updates_mod.list_upgrades()
         except Exception as exc:  # pragma: no cover - defensive
             logger.exception("Update check failed")
-            self.app.call_from_thread(self._status, f"Failed: {exc}")
+            self.app.call_from_thread(self._finish_error, exc)
             return
         self.app.call_from_thread(self._populate, ups)
+
+    def _finish_error(self, exc: Exception) -> None:
+        self.query_one("#updates-table", DataTable).loading = False
+        self._status(f"Failed: {exc}")
 
     def _populate(self, ups) -> None:
         self._ups = ups
         table = self.query_one("#updates-table", DataTable)
+        table.loading = False
         table.clear()
         for u in ups:
             table.add_row(u.name, u.id, u.current, u.available)
@@ -68,8 +78,7 @@ class UpdatesView(BaseView):
     def on_button_pressed(self, event: Button.Pressed) -> None:
         bid = event.button.id
         if bid == "check":
-            self._status("Checking…")
-            self.check()
+            self._start_check()
         elif bid == "apply-one":
             self._apply_flow(selected_only=True)
         elif bid == "apply-all":
@@ -113,4 +122,4 @@ class UpdatesView(BaseView):
             severity="information" if code == 0 else "error",
             title="Updates",
         )
-        self.check()
+        self._start_check()

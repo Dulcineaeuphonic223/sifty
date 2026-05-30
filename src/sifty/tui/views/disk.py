@@ -28,12 +28,19 @@ class DiskView(BaseView):
             yield Button("Browse…", id="browse")
             yield Button("Analyze", id="analyze", variant="primary")
             yield Button("Find duplicates", id="dupes")
-        yield Panel(Tree("…", id="biggest-tree"), title="Biggest items")
+        yield Panel(Tree("(no analysis yet)", id="biggest-tree"), title="Biggest items")
         yield Static("", id="disk-status", classes="status")
 
     def on_mount(self) -> None:
         if self.workers_enabled():
-            self.analyze()
+            self._start_analyze()
+        else:
+            self._status("Choose a folder and press Analyze.")
+
+    def _start_analyze(self) -> None:
+        self._status(f"Analyzing {self._path()}…")
+        self.query_one("#biggest-tree", Tree).loading = True
+        self.analyze()
 
     def _path(self) -> Path:
         raw = self.query_one("#disk-path", Input).value or str(Path.home())
@@ -49,15 +56,23 @@ class DiskView(BaseView):
             items = disk.biggest(path, 20)
         except Exception as exc:  # pragma: no cover - defensive
             logger.exception("Disk analyze failed for %s", path)
-            self.app.call_from_thread(self._status, f"Failed: {exc}")
+            self.app.call_from_thread(self._finish_error, exc)
             return
         self.app.call_from_thread(self._show_biggest, path, items)
 
+    def _finish_error(self, exc: Exception) -> None:
+        self.query_one("#biggest-tree", Tree).loading = False
+        self._status(f"Failed: {exc}")
+
     def _show_biggest(self, path: Path, items) -> None:
         tree = self.query_one("#biggest-tree", Tree)
+        tree.loading = False
         tree.clear()
         tree.root.set_label(str(path))
         tree.root.expand()
+        if not items:
+            self._status(f"No files found in {path}.")
+            return
         for entry, size in items:
             suffix = "\\" if entry.is_dir() else ""
             tree.root.add_leaf(f"{entry.name}{suffix}  —  {human_size(size)}")
@@ -80,8 +95,7 @@ class DiskView(BaseView):
 
     def on_button_pressed(self, event: Button.Pressed) -> None:
         if event.button.id == "analyze":
-            self._status("Analyzing…")
-            self.analyze()
+            self._start_analyze()
         elif event.button.id == "dupes":
             self._status("Hashing files… (this can take a while)")
             self.find_dupes()
@@ -98,5 +112,4 @@ class DiskView(BaseView):
             return
         self.query_one("#disk-path", Input).value = str(picked)
         state.add_recent_path(str(picked))
-        self._status("Analyzing…")
-        self.analyze()
+        self._start_analyze()
