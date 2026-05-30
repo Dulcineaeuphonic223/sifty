@@ -54,6 +54,10 @@ sifty apps uninstall "App"   # uninstall via winget (preview, then --apply)
 sifty update check           # list available updates (winget)
 sifty update apply           # upgrade everything (asks first)
 
+# History & undo
+sifty history                # what was cleaned + total space reclaimed over time
+sifty undo                   # restore the items from the most recent clean
+
 # Organize files
 sifty organize preview C:\Users\you\Downloads --by type
 sifty organize apply   C:\Users\you\Downloads --by date
@@ -74,7 +78,8 @@ Some operations (Windows temp, update cache, certain uninstalls) need an
 In the **TUI** (`sifty tui`): press **Ctrl+P** for the command palette (jump to
 any screen / run any action), use **Browse…** on the Disk screen to pick a folder,
 and on the Apps screen type to filter, click a header to sort, **Space** to mark
-rows, then bulk-uninstall.
+rows, then bulk-uninstall. The **Reports** screen shows space reclaimed over time
+and an **Undo last clean** button (restores trashed items from the Recycle Bin).
 
 ## AI setup (optional)
 
