@@ -6,7 +6,7 @@ import typer
 from rich.table import Table
 
 from ...console import confirm, console, human_size, success, warn
-from ...core import junk
+from ...core import history, junk
 from .. import output
 
 app = typer.Typer(help="Scan and clean junk files (temp, caches, update cache).")
@@ -76,6 +76,10 @@ def clean_cmd(
         return
 
     result = junk.clean(only=only, dry_run=False)
+    history.record_clean(
+        "junk", ",".join(sorted(only)) if only else "all",
+        result.bytes_freed, result.items, result.trashed,
+    )
     success(f"Sent {result.items:,} items ({human_size(result.bytes_freed)}) to the Recycle Bin.")
     if result.skipped:
         warn(f"{len(result.skipped)} item(s) skipped (in use or protected).")

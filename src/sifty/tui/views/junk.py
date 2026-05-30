@@ -10,7 +10,7 @@ from textual.containers import Horizontal
 from textual.widgets import Button, SelectionList, Static
 from textual.widgets.selection_list import Selection
 
-from ...core import junk
+from ...core import history, junk
 from ...windows.admin import is_admin, relaunch_as_admin
 from ...console import human_size
 from ..modals import ConfirmModal
@@ -110,6 +110,10 @@ class JunkView(BaseView):
     @work(thread=True, exclusive=True)
     def apply_clean(self, keys: set[str]) -> None:
         result = junk.clean(only=keys, dry_run=False)
+        history.record_clean(
+            "junk", ",".join(sorted(keys)),
+            result.bytes_freed, result.items, result.trashed,
+        )
         self.app.call_from_thread(
             self._after_clean, result.bytes_freed, result.items, len(result.skipped)
         )

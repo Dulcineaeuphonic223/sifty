@@ -7,7 +7,8 @@ import sys
 import typer
 
 from .. import __version__
-from ..console import console, error, warn
+from ..console import confirm, console, error, human_size, success, warn
+from ..core import history, undo
 from ..infra.logging import get_logger, log_file, setup_logging
 from ..windows.admin import is_admin, relaunch_as_admin
 from . import output
@@ -107,6 +108,70 @@ def logs_cmd(
     lines = path.read_text(encoding="utf-8", errors="replace").splitlines()
     for line in lines[-tail:]:
         console.print(line, markup=False, highlight=False)
+
+
+@app.command("history")
+def history_cmd(
+    limit: int = typer.Option(20, "--limit", "-n", help="How many recent runs to show."),
+) -> None:
+    """Show what Sifty has cleaned and how much space it reclaimed."""
+    from rich.table import Table
+
+    runs = history.recent_runs(limit)
+    summ = history.summary()
+
+    if output.json_enabled():
+        output.emit({
+            "summary": summ,
+            "runs": [
+                {"id": r.id, "ts": r.ts, "action": r.action, "detail": r.detail,
+                 "bytes_freed": r.bytes_freed, "items": r.items,
+                 "success": r.success, "restorable": r.restorable}
+                for r in runs
+            ],
+        })
+        return
+
+    console.print(
+        f"[bold]{summ['runs']}[/bold] runs · [bold]{human_size(summ['bytes_freed'])}[/bold] "
+        f"reclaimed · [bold]{summ['items']:,}[/bold] items\n"
+    )
+    if not runs:
+        console.print("No history yet — run [cyan]sifty junk clean --apply[/cyan] first.")
+        return
+    table = Table(title="Recent runs")
+    table.add_column("When (UTC)", style="dim")
+    table.add_column("Action")
+    table.add_column("Detail", style="dim")
+    table.add_column("Items", justify="right")
+    table.add_column("Freed", justify="right")
+    table.add_column("Restorable", justify="right")
+    for r in runs:
+        table.add_row(r.ts, r.action, r.detail, f"{r.items:,}",
+                      human_size(r.bytes_freed), str(r.restorable) if r.restorable else "—")
+    console.print(table)
+
+
+@app.command("undo")
+def undo_cmd(
+    yes: bool = typer.Option(False, "--yes", "-y", help="Skip the confirmation prompt."),
+) -> None:
+    """Restore the items from the most recent clean (from the Recycle Bin)."""
+    run = undo.last_undoable()
+    if run is None:
+        console.print("Nothing to undo — no restorable items in history.")
+        return
+    if not confirm(
+        f"Restore {run.restorable} item(s) from the {run.action} clean at {run.ts}?",
+        assume_yes=yes,
+    ):
+        warn("Cancelled.")
+        return
+    with console.status("Restoring from the Recycle Bin…"):
+        restored, failed = undo.undo(run.id)
+    success(f"Restored {restored} item(s).")
+    if failed:
+        warn(f"{failed} item(s) could not be restored (see `sifty logs`).")
 
 
 def entrypoint() -> None:
