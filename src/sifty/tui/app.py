@@ -9,18 +9,38 @@ from __future__ import annotations
 
 from textual.app import App, ComposeResult
 from textual.containers import Horizontal, VerticalScroll
+from textual.theme import Theme
 from textual.widgets import Footer, Header, Label, ListItem, ListView
 
 from .views import VIEWS
 
-# (nav key, sidebar label) — order defines the menu.
+# A controlled palette so the look doesn't depend on the terminal's own scheme.
+# (In a truecolor terminal like Windows Terminal these render exactly; legacy
+# conhost will approximate them.)
+SIFTY_THEME = Theme(
+    name="sifty",
+    primary="#7aa2f7",     # blue
+    secondary="#9aa5ce",
+    accent="#7dcfff",      # cyan
+    foreground="#c0caf5",
+    background="#16161e",  # deep navy-black
+    surface="#1a1b26",
+    panel="#1f2335",
+    success="#9ece6a",
+    warning="#e0af68",
+    error="#f7768e",
+    dark=True,
+)
+
+# (nav key, sidebar label) — order defines the menu. No emoji: legacy consoles
+# render them as tofu boxes; Windows Terminal users still get a clean look.
 SECTIONS: list[tuple[str, str]] = [
-    ("home", "🏠  Home"),
-    ("junk", "🧹  Junk"),
-    ("disk", "💾  Disk"),
-    ("apps", "📦  Apps"),
-    ("updates", "⬆  Updates"),
-    ("ai", "🤖  AI"),
+    ("home", "Home"),
+    ("junk", "Junk"),
+    ("disk", "Disk"),
+    ("apps", "Apps"),
+    ("updates", "Updates"),
+    ("ai", "AI"),
 ]
 
 
@@ -48,7 +68,8 @@ class SiftyApp(App):
         yield Footer()
 
     async def on_mount(self) -> None:
-        self.theme = "nord"
+        self.register_theme(SIFTY_THEME)
+        self.theme = "sifty"
         await self.show("home")
 
     async def on_list_view_selected(self, event: ListView.Selected) -> None:

@@ -1,34 +1,45 @@
-/* Sifty TUI theme. Built on top of a Textual theme (set in app.py). */
+/* Sifty TUI theme. Built on top of the custom "sifty" theme (set in app.py). */
 
 Screen {
     background: $background;
 }
 
+/* Quiet, theme-matched scrollbars (avoids stray bright strips). */
+* {
+    scrollbar-background: $panel;
+    scrollbar-background-hover: $panel;
+    scrollbar-color: $primary 40%;
+    scrollbar-color-hover: $primary 60%;
+    scrollbar-size-vertical: 1;
+}
+
 /* ---- Sidebar navigation ---- */
 #sidebar {
-    width: 26;
-    background: $panel;
-    padding: 1 0;
-    border-right: tall $primary;
+    width: 24;
+    background: $surface;
+    padding: 1 1;
+    border-right: solid $primary 25%;
 }
 
 #sidebar > ListItem {
     padding: 1 2;
+    margin-bottom: 1;
     color: $text-muted;
 }
 
 #sidebar > ListItem:hover {
-    background: $boost;
+    background: $primary 15%;
 }
 
 #sidebar > ListItem.-highlight {
-    background: $primary 30%;
+    background: $primary 25%;
     color: $text;
     text-style: bold;
 }
 
 #sidebar:focus > ListItem.-highlight {
     background: $primary;
+    color: $background;
 }
 
 /* ---- Content area ---- */
@@ -119,7 +130,7 @@ ConfirmModal {
     height: auto;
     padding: 1 2;
     background: $surface;
-    border: thick $warning;
+    border: round $warning;
 }
 
 #confirm-msg {

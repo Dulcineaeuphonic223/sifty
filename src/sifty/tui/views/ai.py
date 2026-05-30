@@ -14,7 +14,7 @@ _SYSTEM = "You are a careful Windows maintenance assistant. Be concise and cauti
 
 class AIView(BaseView):
     def compose(self) -> ComposeResult:
-        yield Static("🤖 Ask Sifty", classes="title")
+        yield Static("Ask Sifty", classes="title")
         yield Static("Checking Ollama…", id="ai-status", classes="subtle")
         yield RichLog(id="chat-log", wrap=True, markup=True)
         yield Input(

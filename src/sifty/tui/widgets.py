@@ -6,14 +6,14 @@ from rich.text import Text
 from textual.containers import Vertical
 
 
-def usage_gauge(percent: float, width: int = 28) -> Text:
-    """A coloured block-bar gauge for a 0–100% value."""
+def usage_gauge(percent: float, width: int = 30) -> Text:
+    """A coloured block-bar gauge for a 0–100% value (theme-matched hex)."""
     pct = max(0.0, min(100.0, percent))
     filled = int(round(pct / 100 * width))
-    color = "red" if pct >= 90 else "yellow" if pct >= 75 else "green"
+    color = "#f7768e" if pct >= 90 else "#e0af68" if pct >= 75 else "#9ece6a"
     bar = Text()
-    bar.append("█" * filled, style=color)
-    bar.append("░" * (width - filled), style="grey37")
+    bar.append("━" * filled, style=color)
+    bar.append("━" * (width - filled), style="#3b4261")
     bar.append(f"  {pct:.0f}%", style=f"bold {color}")
     return bar
 

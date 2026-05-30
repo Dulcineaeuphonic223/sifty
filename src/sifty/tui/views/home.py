@@ -16,8 +16,8 @@ from .base import BaseView
 class HomeView(BaseView):
     def compose(self) -> ComposeResult:
         yield Static("Overview", classes="title")
-        yield Panel(Static("Reading volumes…", id="vol-body"), title="💾 Volumes")
-        yield Panel(Label("Reclaimable junk: …", id="junk-total"), title="🧹 Junk")
+        yield Panel(Static("Reading volumes…", id="vol-body"), title="Volumes")
+        yield Panel(Label("Reclaimable junk: …", id="junk-total"), title="Junk")
 
     def on_mount(self) -> None:
         self._render_volumes()  # fast (psutil), no worker needed

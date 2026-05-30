@@ -15,7 +15,7 @@ from .base import BaseView
 
 class AppsView(BaseView):
     def compose(self) -> ComposeResult:
-        yield Static("📦 Installed apps", classes="title")
+        yield Static("Installed apps", classes="title")
         yield Static("Highlight a row, then Uninstall. Sorted by size.", classes="subtle")
         yield DataTable(id="apps-table")
         with Horizontal(classes="actions"):

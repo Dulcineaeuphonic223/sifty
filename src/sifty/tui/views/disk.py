@@ -17,7 +17,7 @@ from .base import BaseView
 
 class DiskView(BaseView):
     def compose(self) -> ComposeResult:
-        yield Static("💾 Disk analysis", classes="title")
+        yield Static("Disk analysis", classes="title")
         with Horizontal(classes="row"):
             yield Input(value=str(Path.home()), id="disk-path", placeholder="Folder to analyze")
             yield Button("Analyze", id="analyze", variant="primary")

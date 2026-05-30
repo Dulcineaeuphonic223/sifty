@@ -16,7 +16,7 @@ from .base import BaseView
 
 class JunkView(BaseView):
     def compose(self) -> ComposeResult:
-        yield Static("🧹 Junk cleanup", classes="title")
+        yield Static("Junk cleanup", classes="title")
         yield Static(
             "Tick what to remove, then Clean. Everything goes to the Recycle Bin.",
             classes="subtle",

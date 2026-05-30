@@ -14,7 +14,7 @@ from .base import BaseView
 
 class UpdatesView(BaseView):
     def compose(self) -> ComposeResult:
-        yield Static("⬆ Updates", classes="title")
+        yield Static("Updates", classes="title")
         yield Static("Available application updates via winget.", classes="subtle")
         yield DataTable(id="updates-table")
         with Horizontal(classes="actions"):
