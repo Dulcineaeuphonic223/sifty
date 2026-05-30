@@ -8,6 +8,7 @@ from textual.containers import Horizontal
 from textual.widgets import Button, SelectionList, Static
 from textual.widgets.selection_list import Selection
 
+from ...admin import is_admin, relaunch_as_admin
 from ...commands import junk
 from ...console import human_size
 from ..modals import ConfirmModal
@@ -66,6 +67,25 @@ class JunkView(BaseView):
         if not keys:
             self._set_status("Nothing selected.")
             return
+
+        # If admin-only categories are selected without elevation, offer to
+        # restart elevated. Declining just cleans what's reachable.
+        needs_admin = any(
+            self._cats[k].category.requires_admin for k in keys if k in self._cats
+        )
+        if needs_admin and not is_admin():
+            elevate = await self.app.push_screen_wait(
+                ConfirmModal(
+                    "Some selected items (Windows Temp / Update cache) need "
+                    "administrator rights. Restart Sifty as administrator?",
+                    confirm_label="Restart as admin",
+                )
+            )
+            if elevate:
+                if relaunch_as_admin():
+                    self.app.exit(message="Relaunching Sifty as administrator…")
+                return
+
         size = sum(self._cats[k].size for k in keys if k in self._cats)
         files = sum(self._cats[k].file_count for k in keys if k in self._cats)
         plural = "y" if len(keys) == 1 else "ies"

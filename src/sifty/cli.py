@@ -2,13 +2,12 @@
 
 from __future__ import annotations
 
-import ctypes
-
 import typer
 
 from . import __version__
+from .admin import is_admin, relaunch_as_admin
 from .commands import ai_group, apps, disk, junk, organize, updates
-from .console import console
+from .console import console, warn
 
 app = typer.Typer(
     name="sifty",
@@ -25,11 +24,18 @@ app.add_typer(organize.app, name="organize")
 app.add_typer(ai_group.app, name="ai")
 
 
-def _is_admin() -> bool:
-    try:
-        return bool(ctypes.windll.shell32.IsUserAnAdmin())  # type: ignore[attr-defined]
-    except Exception:
-        return False
+@app.callback()
+def main(
+    admin: bool = typer.Option(
+        False, "--admin", "--elevate",
+        help="Relaunch elevated (UAC) so admin-only tasks can run.",
+    ),
+) -> None:
+    """Sifty — AI-assisted Windows maintenance."""
+    if admin and not is_admin():
+        if relaunch_as_admin():
+            raise typer.Exit()  # elevated process takes over in a new window
+        warn("Elevation was declined; continuing without administrator rights.")
 
 
 @app.command("tui")
@@ -52,7 +58,7 @@ def doctor_cmd() -> None:
     from .commands.updates import _winget_available
     from .ai.client import OllamaClient
 
-    admin = _is_admin()
+    admin = is_admin()
     console.print(f"Administrator: {'[green]yes[/green]' if admin else '[yellow]no[/yellow] (some junk/uninstall actions need it)'}")
     console.print(f"winget: {'[green]available[/green]' if _winget_available() else '[red]missing[/red]'}")
     client = OllamaClient.from_config()

@@ -12,6 +12,7 @@ from textual.containers import Horizontal, VerticalScroll
 from textual.theme import Theme
 from textual.widgets import Footer, Header, Label, ListItem, ListView
 
+from ..admin import is_admin, relaunch_as_admin
 from .views import VIEWS
 
 # A controlled palette so the look doesn't depend on the terminal's own scheme.
@@ -48,7 +49,10 @@ class SiftyApp(App):
     """The top-level Sifty terminal application."""
 
     CSS_PATH = "styles.tcss"
-    BINDINGS = [("q", "quit", "Quit")]
+    BINDINGS = [
+        ("q", "quit", "Quit"),
+        ("f2", "elevate", "Admin"),
+    ]
     TITLE = "Sifty"
     SUB_TITLE = "Windows maintenance"
 
@@ -70,7 +74,24 @@ class SiftyApp(App):
     async def on_mount(self) -> None:
         self.register_theme(SIFTY_THEME)
         self.theme = "sifty"
+        self.sub_title = (
+            "Administrator" if is_admin() else "standard user · F2 to elevate"
+        )
         await self.show("home")
+
+    def action_elevate(self) -> None:
+        """Relaunch Sifty with administrator rights (UAC), or report status."""
+        if is_admin():
+            self.notify("Already running as administrator.", title="Admin")
+            return
+        if relaunch_as_admin():
+            self.exit(message="Relaunching Sifty as administrator…")
+        else:
+            self.notify(
+                "Could not elevate — the UAC prompt was dismissed.",
+                title="Admin",
+                severity="warning",
+            )
 
     async def on_list_view_selected(self, event: ListView.Selected) -> None:
         key = (event.item.id or "nav-home").removeprefix("nav-")

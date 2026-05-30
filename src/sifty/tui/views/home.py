@@ -5,8 +5,9 @@ from __future__ import annotations
 from rich.text import Text
 from textual import work
 from textual.app import ComposeResult
-from textual.widgets import Label, Static
+from textual.widgets import Button, Label, Static
 
+from ...admin import is_admin
 from ...commands import disk, junk
 from ...console import human_size
 from ..widgets import Panel, usage_gauge
@@ -18,11 +19,28 @@ class HomeView(BaseView):
         yield Static("Overview", classes="title")
         yield Panel(Static("Reading volumes…", id="vol-body"), title="Volumes")
         yield Panel(Label("Reclaimable junk: …", id="junk-total"), title="Junk")
+        if not is_admin():
+            with Panel(title="Administrator"):
+                yield Static(
+                    "[yellow]●[/yellow] Running as a standard user. Some tasks "
+                    "(Windows Temp, Update cache, some uninstalls) need elevation.",
+                    classes="subtle",
+                )
+                yield Button("Restart as administrator", id="elevate", variant="primary")
+        else:
+            yield Panel(
+                Static("[green]●[/green] Running as administrator — all tasks available."),
+                title="Administrator",
+            )
 
     def on_mount(self) -> None:
         self._render_volumes()  # fast (psutil), no worker needed
         if self.workers_enabled():
             self.compute_junk_total()
+
+    def on_button_pressed(self, event: Button.Pressed) -> None:
+        if event.button.id == "elevate":
+            self.app.action_elevate()
 
     def _render_volumes(self) -> None:
         text = Text()
