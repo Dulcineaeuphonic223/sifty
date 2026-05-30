@@ -15,6 +15,7 @@ from sifty.commands.apps import InstalledApp
 from sifty.commands.junk import CategoryScan, JunkCategory
 from sifty.commands.updates import Upgrade
 from sifty.tui.app import SECTIONS, SiftyApp
+from sifty.tui.modals import ConfirmModal
 from sifty.tui.views import AppsView, DiskView, HomeView, JunkView, UpdatesView, VIEWS
 
 
@@ -81,6 +82,27 @@ async def test_updates_view_populates_table():
         view._populate(ups)
         table = pilot.app.query_one("#updates-table", DataTable)
         assert table.row_count == 1
+
+
+async def test_junk_clean_opens_confirm_in_worker():
+    # Regression: push_screen_wait must run in a worker. Before the fix this
+    # path raised WorkerError instead of opening the confirm dialog.
+    cats = [CategoryScan(JunkCategory("user-temp", "User temp", "", []), 600, 3, [])]
+    async with _make_app().run_test() as pilot:
+        await pilot.app.show("junk")
+        await pilot.pause()
+        view = pilot.app.query_one(JunkView)
+        view._populate(cats)  # the size>0 category is selected by default
+        await pilot.pause()
+
+        view._clean()  # launches the worker that awaits push_screen_wait
+        await pilot.pause()
+        await pilot.pause()
+
+        assert isinstance(pilot.app.screen, ConfirmModal)  # dialog opened, no crash
+        await pilot.press("escape")  # cancel
+        await pilot.pause()
+        assert not isinstance(pilot.app.screen, ConfirmModal)
 
 
 async def test_disk_view_shows_biggest_items():

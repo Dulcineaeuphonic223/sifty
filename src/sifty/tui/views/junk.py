@@ -60,14 +60,16 @@ class JunkView(BaseView):
     def _set_status(self, msg: str) -> None:
         self.query_one("#junk-status", Static).update(msg)
 
-    async def on_button_pressed(self, event: Button.Pressed) -> None:
+    def on_button_pressed(self, event: Button.Pressed) -> None:
         if event.button.id == "rescan":
             self._set_status("Rescanning…")
             self.load()
         elif event.button.id == "clean":
-            await self._clean()
+            self._clean()  # launches the worker below
 
+    @work
     async def _clean(self) -> None:
+        # Must run in a worker: push_screen_wait() requires a worker context.
         keys = set(self.query_one("#junk-list", SelectionList).selected)
         if not keys:
             self._set_status("Nothing selected.")

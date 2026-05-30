@@ -65,12 +65,20 @@ class UpdatesView(BaseView):
             return self._ups[idx]
         return None
 
-    async def on_button_pressed(self, event: Button.Pressed) -> None:
+    def on_button_pressed(self, event: Button.Pressed) -> None:
         bid = event.button.id
         if bid == "check":
             self._status("Checking…")
             self.check()
         elif bid == "apply-one":
+            self._apply_flow(selected_only=True)
+        elif bid == "apply-all":
+            self._apply_flow(selected_only=False)
+
+    @work
+    async def _apply_flow(self, selected_only: bool) -> None:
+        # Must run in a worker: push_screen_wait() requires a worker context.
+        if selected_only:
             u = self._selected()
             if not u:
                 self._status("No update selected.")
@@ -82,7 +90,7 @@ class UpdatesView(BaseView):
             if ok:
                 self._status(f"Upgrading {u.name}…")
                 self.apply(u.id)
-        elif bid == "apply-all":
+        else:
             if not self._ups:
                 self._status("Nothing to upgrade.")
                 return

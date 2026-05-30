@@ -7,13 +7,18 @@ route destructive actions through confirm modals + ``safety.trash()``.
 
 from __future__ import annotations
 
+import logging
+
 from textual.app import App, ComposeResult
 from textual.containers import Horizontal, VerticalScroll
 from textual.theme import Theme
 from textual.widgets import Footer, Header, Label, ListItem, ListView
+from textual.worker import Worker, WorkerState
 
 from ..admin import is_admin, relaunch_as_admin
 from .views import VIEWS
+
+logger = logging.getLogger("sifty.tui")
 
 # A controlled palette so the look doesn't depend on the terminal's own scheme.
 # (In a truecolor terminal like Windows Terminal these render exactly; legacy
@@ -96,6 +101,13 @@ class SiftyApp(App):
     async def on_list_view_selected(self, event: ListView.Selected) -> None:
         key = (event.item.id or "nav-home").removeprefix("nav-")
         await self.show(key)
+
+    def on_worker_state_changed(self, event: Worker.StateChanged) -> None:
+        """Log any worker that fails, so TUI errors land in the diagnostics log."""
+        if event.state is WorkerState.ERROR:
+            logger.error(
+                "Worker %r failed", event.worker.name, exc_info=event.worker.error
+            )
 
     async def show(self, key: str) -> None:
         content = self.query_one("#content", VerticalScroll)

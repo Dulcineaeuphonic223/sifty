@@ -70,25 +70,30 @@ class AppsView(BaseView):
             return self._apps[idx]
         return None
 
-    async def on_button_pressed(self, event: Button.Pressed) -> None:
+    def on_button_pressed(self, event: Button.Pressed) -> None:
         if event.button.id == "refresh":
             self._status("Refreshing…")
             self.load()
         elif event.button.id == "uninstall":
-            app_obj = self._selected_app()
-            if not app_obj:
-                self._status("No app selected.")
-                return
-            ok = await self.app.push_screen_wait(
-                ConfirmModal(
-                    f"Uninstall '{app_obj.name}'?\nThis runs winget and may open the "
-                    f"app's own uninstaller.",
-                    confirm_label="Uninstall",
-                )
+            self._uninstall_flow()  # launches the worker below
+
+    @work
+    async def _uninstall_flow(self) -> None:
+        # Must run in a worker: push_screen_wait() requires a worker context.
+        app_obj = self._selected_app()
+        if not app_obj:
+            self._status("No app selected.")
+            return
+        ok = await self.app.push_screen_wait(
+            ConfirmModal(
+                f"Uninstall '{app_obj.name}'?\nThis runs winget and may open the "
+                f"app's own uninstaller.",
+                confirm_label="Uninstall",
             )
-            if ok:
-                self._status(f"Uninstalling {app_obj.name}…")
-                self.do_uninstall(app_obj.name)
+        )
+        if ok:
+            self._status(f"Uninstalling {app_obj.name}…")
+            self.do_uninstall(app_obj.name)
 
     @work(thread=True, exclusive=True)
     def do_uninstall(self, name: str) -> None:
