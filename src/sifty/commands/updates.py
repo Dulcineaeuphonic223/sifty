@@ -112,6 +112,18 @@ def check_cmd() -> None:
     console.print("\nRun [cyan]sifty update apply[/cyan] to install (use --id for a single app).")
 
 
+def apply_upgrades(upgrade_id: str | None = None) -> int:
+    """Apply updates via winget (a single id, or all). Returns the exit code.
+
+    Core function reused by both the CLI handler and the TUI.
+    """
+    cmd = ["winget", "upgrade", "--silent",
+           "--accept-source-agreements", "--accept-package-agreements"]
+    cmd += ["--id", upgrade_id] if upgrade_id else ["--all"]
+    return subprocess.run(cmd, capture_output=True, text=True,
+                          encoding="utf-8", errors="replace").returncode
+
+
 @app.command("apply")
 def apply_cmd(
     id: str = typer.Option(None, "--id", help="Upgrade only this winget id (default: all)."),
@@ -127,14 +139,10 @@ def apply_cmd(
         warn("Cancelled.")
         return
 
-    cmd = ["winget", "upgrade", "--silent",
-           "--accept-source-agreements", "--accept-package-agreements"]
-    cmd += ["--id", id] if id else ["--all"]
-
     console.print("[dim]Running winget…[/dim]")
-    result = subprocess.run(cmd)
-    if result.returncode == 0:
+    code = apply_upgrades(id)
+    if code == 0:
         success("Updates applied.")
     else:
-        error(f"winget exited with code {result.returncode}.")
-        raise typer.Exit(result.returncode)
+        error(f"winget exited with code {code}.")
+        raise typer.Exit(code)

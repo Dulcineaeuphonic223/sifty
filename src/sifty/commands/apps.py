@@ -167,6 +167,24 @@ def _winget_available() -> bool:
         return False
 
 
+def uninstall_app(name: str) -> tuple[bool, str]:
+    """Uninstall an app by name via winget. Returns (ok, message).
+
+    Core function reused by both the CLI handler and the TUI.
+    """
+    if not _winget_available():
+        return False, "winget is not available on this system."
+    result = subprocess.run(
+        ["winget", "uninstall", "--name", name, "--silent",
+         "--accept-source-agreements"],
+        capture_output=True, text=True, encoding="utf-8", errors="replace",
+    )
+    if result.returncode == 0:
+        return True, f"Uninstalled '{name}'."
+    detail = (result.stderr or result.stdout or "").strip()
+    return False, f"winget failed (exit {result.returncode}): {detail}"
+
+
 @app.command("uninstall")
 def uninstall_cmd(
     name: str = typer.Argument(..., help="App name (or winget id) to uninstall."),
@@ -187,13 +205,9 @@ def uninstall_cmd(
         warn("Cancelled.")
         return
 
-    result = subprocess.run(
-        ["winget", "uninstall", "--name", name, "--silent",
-         "--accept-source-agreements"],
-        capture_output=True, text=True,
-    )
-    if result.returncode == 0:
-        success(f"Uninstalled '{name}'.")
+    ok, message = uninstall_app(name)
+    if ok:
+        success(message)
     else:
-        error(f"winget failed (exit {result.returncode}): {result.stderr.strip() or result.stdout.strip()}")
-        raise typer.Exit(result.returncode)
+        error(message)
+        raise typer.Exit(1)
