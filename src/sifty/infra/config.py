@@ -20,7 +20,12 @@ DEFAULTS: dict[str, Any] = {
         # Ollama HTTP endpoint and the local model to use.
         "host": "http://localhost:11434",
         "model": "qwen2.5:3b",
+        # Per-chunk wait while streaming a reply (and the initial model load),
+        # not the total answer length — see ai/client.py.
         "timeout_seconds": 60,
+        # How long Ollama keeps the model resident after a request, so the next
+        # question doesn't pay the cold-load cost again.
+        "keep_alive": "10m",
     },
     "safety": {
         # User-supplied extra paths that must never be touched, on top of the

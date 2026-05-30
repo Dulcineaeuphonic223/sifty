@@ -2,10 +2,20 @@
 
 Everything degrades gracefully: if Ollama isn't running, :func:`is_available`
 returns ``False`` and callers fall back to non-AI behaviour instead of crashing.
+
+Chat is **streamed**. A local model has to be loaded into RAM/VRAM on its first
+request (a cold start that can take many seconds) and then emits tokens slowly.
+A single blocking request with one wall-clock budget covers *all* of that at
+once, so a model that is working — just slow — trips the timeout and the user
+gets nothing. Streaming turns the timeout into "time between tokens" instead of
+"time for the whole answer", so a slow-but-alive model keeps going and callers
+can show progress as it arrives.
 """
 
 from __future__ import annotations
 
+import json
+from collections.abc import Iterator
 from dataclasses import dataclass
 
 import httpx
@@ -22,6 +32,7 @@ class OllamaClient:
     host: str
     model: str
     timeout: float
+    keep_alive: str = "10m"
 
     @classmethod
     def from_config(cls, config=None) -> "OllamaClient":
@@ -31,7 +42,16 @@ class OllamaClient:
             host=ai.get("host", "http://localhost:11434"),
             model=ai.get("model", "qwen2.5:3b"),
             timeout=float(ai.get("timeout_seconds", 60)),
+            keep_alive=str(ai.get("keep_alive", "10m")),
         )
+
+    def _timeout(self) -> httpx.Timeout:
+        """Split timeout: connecting is instant; generation is the slow part.
+
+        ``timeout`` bounds the wait *between* streamed chunks (and the initial
+        model load), not the total length of the answer.
+        """
+        return httpx.Timeout(self.timeout, connect=5.0, write=10.0, pool=5.0)
 
     def is_available(self) -> bool:
         """Return True if the Ollama server responds to a tags request."""
@@ -41,20 +61,54 @@ class OllamaClient:
         except httpx.HTTPError:
             return False
 
-    def chat(self, system: str, user: str) -> str:
-        """Send a single-turn chat and return the assistant's text."""
-        payload = {
+    def _payload(self, system: str, user: str) -> dict:
+        return {
             "model": self.model,
-            "stream": False,
+            "stream": True,
+            "keep_alive": self.keep_alive,
             "messages": [
                 {"role": "system", "content": system},
                 {"role": "user", "content": user},
             ],
         }
+
+    def chat_stream(self, system: str, user: str) -> Iterator[str]:
+        """Stream the assistant's reply token-by-token.
+
+        Yields content chunks as they arrive. Raises :class:`OllamaUnavailable`
+        with a human-readable message on transport errors or timeouts.
+        """
         try:
-            resp = httpx.post(f"{self.host}/api/chat", json=payload, timeout=self.timeout)
-            resp.raise_for_status()
+            with httpx.stream(
+                "POST",
+                f"{self.host}/api/chat",
+                json=self._payload(system, user),
+                timeout=self._timeout(),
+            ) as resp:
+                resp.raise_for_status()
+                for line in resp.iter_lines():
+                    if not line:
+                        continue
+                    try:
+                        data = json.loads(line)
+                    except json.JSONDecodeError:
+                        continue
+                    chunk = data.get("message", {}).get("content", "")
+                    if chunk:
+                        yield chunk
+                    if data.get("done"):
+                        break
+        except httpx.TimeoutException as exc:
+            raise OllamaUnavailable(
+                "timed out — the model may still be loading; try again"
+            ) from exc
         except httpx.HTTPError as exc:
             raise OllamaUnavailable(str(exc)) from exc
-        data = resp.json()
-        return data.get("message", {}).get("content", "").strip()
+
+    def chat(self, system: str, user: str) -> str:
+        """Send a single-turn chat and return the full assistant text.
+
+        Consumes :meth:`chat_stream` so non-streaming callers get the same
+        timeout robustness; the chunks are simply joined.
+        """
+        return "".join(self.chat_stream(system, user)).strip()
