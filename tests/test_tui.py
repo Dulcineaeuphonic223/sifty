@@ -20,6 +20,7 @@ from sifty.tui.commands import SiftyCommands, _entries
 from sifty.tui.modals import ConfirmModal
 from sifty.tui.views import (
     AppsView,
+    CleanupView,
     DiskView,
     HomeView,
     JunkView,
@@ -143,6 +144,35 @@ async def test_apps_row_click_toggles_mark():
         view._toggle_mark("Beta")
         view._toggle_mark("Alpha")  # toggling off
         assert {a.name for a in view._apps_for_action()} == {"Beta"}
+
+
+async def test_cleanup_view_populates_and_marks():
+    rows = [(Path("C:/a.bin"), 100), (Path("C:/b.bin"), 200)]
+    async with _make_app().run_test() as pilot:
+        await pilot.app.show("cleanup")
+        await pilot.pause()
+        view = pilot.app.query_one(CleanupView)
+        view._mode = "large"
+        view._populate(rows, premark=False)
+        await pilot.pause()
+        table = pilot.app.query_one("#cleanup-table", DataTable)
+        assert table.row_count == 2
+        assert view._marked == set()
+        key = str(rows[0][0])
+        view._toggle_mark(key)
+        assert view._marked == {key}
+
+
+async def test_cleanup_duplicates_premark():
+    rows = [(Path("C:/dup.bin"), 50)]
+    async with _make_app().run_test() as pilot:
+        await pilot.app.show("cleanup")
+        await pilot.pause()
+        view = pilot.app.query_one(CleanupView)
+        view._mode = "duplicates"
+        view._populate(rows, premark=True)  # redundant copies pre-marked
+        await pilot.pause()
+        assert view._marked == {str(rows[0][0])}
 
 
 async def test_reports_view_populates():

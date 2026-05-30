@@ -1,0 +1,129 @@
+"""`sifty cleanup` — duplicates, large files, and stale downloads."""
+
+from __future__ import annotations
+
+from datetime import datetime
+from pathlib import Path
+
+import typer
+from rich.table import Table
+
+from ...console import confirm, console, human_size, success, warn
+from ...core import cleanup, disk, history
+from .. import output
+
+app = typer.Typer(help="Smart cleanup: duplicate files, large files, stale downloads.")
+
+
+@app.command("duplicates")
+def duplicates_cmd(
+    path: Path = typer.Argument(..., help="Directory to de-duplicate."),
+    min_size: int = typer.Option(1024, "--min-size", help="Ignore files smaller than this (bytes)."),
+    apply: bool = typer.Option(False, "--apply", help="Trash the redundant copies (keeps one each)."),
+    yes: bool = typer.Option(False, "--yes", "-y", help="Skip the confirmation prompt."),
+) -> None:
+    """Find duplicates and (with --apply) trash all but one copy of each."""
+    path = path.expanduser()
+    if not path.exists():
+        warn(f"Path does not exist: {path}")
+        raise typer.Exit(1)
+
+    with console.status(f"Hashing files under {path}…") if not output.json_enabled() else _null():
+        groups = disk.find_duplicates(path, min_size)
+    to_delete = cleanup.choose_duplicate_deletions(groups)
+    preview = cleanup.trash_paths(to_delete, dry_run=True)
+
+    if output.json_enabled():
+        output.emit({"groups": len(groups), "redundant": preview.items,
+                     "reclaimable_bytes": preview.bytes_freed})
+        return
+    if preview.items == 0:
+        success("No duplicates to remove.")
+        return
+    console.print(
+        f"{len(groups)} duplicate group(s) · [bold]{preview.items}[/bold] redundant copies · "
+        f"[bold]{human_size(preview.bytes_freed)}[/bold] reclaimable."
+    )
+    if not apply:
+        console.print("[dim]Dry-run — re-run with --apply to remove the extra copies.[/dim]")
+        return
+    if not confirm(f"Move {preview.items} redundant copies ({human_size(preview.bytes_freed)}) to the Recycle Bin?", assume_yes=yes):
+        warn("Cancelled.")
+        return
+    result = cleanup.trash_paths(to_delete, dry_run=False)
+    history.record_clean("cleanup-duplicates", str(path), result.bytes_freed, result.items, result.trashed)
+    success(f"Sent {result.items} copies ({human_size(result.bytes_freed)}) to the Recycle Bin.")
+
+
+@app.command("large")
+def large_cmd(
+    path: Path = typer.Argument(..., help="Directory to scan."),
+    min_size: int = typer.Option(cleanup.DEFAULT_LARGE_MIN, "--min-size", help="Minimum file size (bytes)."),
+    top: int = typer.Option(30, "--top", "-n", help="How many to show."),
+) -> None:
+    """List the biggest files under a path (review, then delete in the TUI)."""
+    path = path.expanduser()
+    if not path.exists():
+        warn(f"Path does not exist: {path}")
+        raise typer.Exit(1)
+
+    items = cleanup.find_large_files(path, min_size, top)
+    if output.json_enabled():
+        output.emit([{"path": str(p), "size_bytes": s} for p, s in items])
+        return
+    if not items:
+        success(f"No files ≥ {human_size(min_size)} under {path}.")
+        return
+    table = Table(title=f"Largest files under {path}")
+    table.add_column("Size", justify="right")
+    table.add_column("Path")
+    for p, s in items:
+        table.add_row(human_size(s), str(p))
+    console.print(table)
+
+
+@app.command("stale")
+def stale_cmd(
+    days: int = typer.Option(cleanup.DEFAULT_STALE_DAYS, "--days", help="Older-than threshold (days)."),
+    apply: bool = typer.Option(False, "--apply", help="Trash the stale items."),
+    yes: bool = typer.Option(False, "--yes", "-y", help="Skip the confirmation prompt."),
+) -> None:
+    """Find old items in Downloads and (with --apply) trash them."""
+    items = cleanup.find_stale_downloads(days)
+    if output.json_enabled():
+        output.emit([
+            {"path": str(p), "size_bytes": s, "modified": datetime.fromtimestamp(m).isoformat()}
+            for p, s, m in items
+        ])
+        return
+    if not items:
+        success(f"No items in Downloads older than {days} days.")
+        return
+    total = sum(s for _p, s, _m in items)
+    table = Table(title=f"Downloads older than {days} days")
+    table.add_column("Size", justify="right")
+    table.add_column("Modified", style="dim")
+    table.add_column("Name")
+    for p, s, m in items:
+        table.add_row(human_size(s), datetime.fromtimestamp(m).strftime("%Y-%m-%d"), p.name)
+    console.print(table)
+    console.print(f"\n[bold]{len(items)} items · {human_size(total)}[/bold]")
+    if not apply:
+        console.print("[dim]Dry-run — re-run with --apply to remove them.[/dim]")
+        return
+    if not confirm(f"Move {len(items)} stale items ({human_size(total)}) to the Recycle Bin?", assume_yes=yes):
+        warn("Cancelled.")
+        return
+    result = cleanup.trash_paths([p for p, _s, _m in items], dry_run=False)
+    history.record_clean("cleanup-stale", f"Downloads >{days}d", result.bytes_freed, result.items, result.trashed)
+    success(f"Sent {result.items} items ({human_size(result.bytes_freed)}) to the Recycle Bin.")
+
+
+class _null:
+    """No-op context manager (used to skip the status spinner in JSON mode)."""
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *exc):
+        return False

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from .ai import AIView
 from .apps import AppsView
+from .cleanup import CleanupView
 from .disk import DiskView
 from .home import HomeView
 from .junk import JunkView
@@ -15,6 +16,7 @@ VIEWS = {
     "home": HomeView,
     "junk": JunkView,
     "disk": DiskView,
+    "cleanup": CleanupView,
     "apps": AppsView,
     "updates": UpdatesView,
     "reports": ReportsView,
@@ -26,6 +28,7 @@ __all__ = [
     "HomeView",
     "JunkView",
     "DiskView",
+    "CleanupView",
     "AppsView",
     "UpdatesView",
     "ReportsView",
