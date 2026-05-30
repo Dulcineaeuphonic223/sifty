@@ -1,41 +1,93 @@
-"""Headless smoke tests for the TUI skeleton, via Textual's Pilot harness.
+"""Headless smoke tests for the TUI, via Textual's Pilot harness.
 
-`start_workers=False` keeps the (slow, real-system) junk scan from running so
-these stay fast and deterministic.
+`start_workers=False` keeps the slow real-system workers from firing; we then
+call each view's `_populate`/render method directly with fake data to verify the
+widgets and Textual API usage without touching the OS.
 """
 
 from __future__ import annotations
 
-from textual.widgets import DataTable, ListView, Static
+from pathlib import Path
 
+from textual.widgets import DataTable, SelectionList, Static, Tree
+
+from sifty.commands.apps import InstalledApp
+from sifty.commands.junk import CategoryScan, JunkCategory
+from sifty.commands.updates import Upgrade
 from sifty.tui.app import SECTIONS, SiftyApp
+from sifty.tui.views import AppsView, DiskView, HomeView, JunkView, UpdatesView, VIEWS
+
+
+def _make_app() -> SiftyApp:
+    return SiftyApp(start_workers=False)
 
 
 async def test_app_boots_with_full_sidebar():
-    app = SiftyApp(start_workers=False)
-    async with app.run_test():
-        sidebar = app.query_one("#sidebar", ListView)
+    async with _make_app().run_test() as pilot:
+        sidebar = pilot.app.query_one("#sidebar")
         assert len(sidebar.children) == len(SECTIONS)
 
 
-async def test_home_shows_volumes_table():
-    app = SiftyApp(start_workers=False)
-    async with app.run_test():
-        table = app.query_one("#volumes", DataTable)
-        assert table.row_count >= 1  # at least the system drive
+async def test_home_renders_volume_gauges():
+    async with _make_app().run_test() as pilot:
+        pilot.app.query_one(HomeView)
+        body = pilot.app.query_one("#vol-body", Static)
+        assert "free" in str(body.render())  # at least one volume rendered
 
 
-async def test_navigation_swaps_to_placeholder():
-    app = SiftyApp(start_workers=False)
-    async with app.run_test():
-        await app.show_placeholder("apps")
-        title = app.query_one(".title", Static)
-        assert "Apps" in str(title.render())
+async def test_navigation_mounts_each_view():
+    async with _make_app().run_test() as pilot:
+        for key, view_cls in VIEWS.items():
+            await pilot.app.show(key)
+            await pilot.pause()
+            assert pilot.app.query_one(view_cls)
 
 
-async def test_junk_total_label_updates():
-    app = SiftyApp(start_workers=False)
-    async with app.run_test():
-        app._set_junk_total(1536)
-        label = app.query_one("#junk-total", Static)
-        assert "1.5 KB" in str(label.render())
+async def test_junk_view_populates_selection_list():
+    cats = [
+        CategoryScan(JunkCategory("user-temp", "User temp", "", []), 600, 3, []),
+        CategoryScan(JunkCategory("browser-cache", "Browser cache", "", []), 0, 0, []),
+    ]
+    async with _make_app().run_test() as pilot:
+        await pilot.app.show("junk")
+        await pilot.pause()
+        view = pilot.app.query_one(JunkView)
+        view._populate(cats)
+        sl = pilot.app.query_one("#junk-list", SelectionList)
+        assert sl.option_count == 2
+
+
+async def test_apps_view_populates_table():
+    apps = [
+        InstalledApp("App A", "1.0", "Pub", 1024, "", "HKCU"),
+        InstalledApp("App B", "2.0", "Pub", 2048, "", "HKLM"),
+    ]
+    async with _make_app().run_test() as pilot:
+        await pilot.app.show("apps")
+        await pilot.pause()
+        view = pilot.app.query_one(AppsView)
+        view._populate(apps)
+        table = pilot.app.query_one("#apps-table", DataTable)
+        assert table.row_count == 2
+        assert view._selected_app() is not None  # cursor on a row
+
+
+async def test_updates_view_populates_table():
+    ups = [Upgrade("Firefox", "Mozilla.Firefox", "120.0", "121.0")]
+    async with _make_app().run_test() as pilot:
+        await pilot.app.show("updates")
+        await pilot.pause()
+        view = pilot.app.query_one(UpdatesView)
+        view._populate(ups)
+        table = pilot.app.query_one("#updates-table", DataTable)
+        assert table.row_count == 1
+
+
+async def test_disk_view_shows_biggest_items():
+    async with _make_app().run_test() as pilot:
+        await pilot.app.show("disk")
+        await pilot.pause()
+        view = pilot.app.query_one(DiskView)
+        view._show_biggest(Path("C:/demo"), [(Path("big.bin"), 5000), (Path("small.txt"), 10)])
+        tree = pilot.app.query_one("#biggest-tree", Tree)
+        assert len(tree.root.children) == 2

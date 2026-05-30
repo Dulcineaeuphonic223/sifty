@@ -1,0 +1,136 @@
+/* Sifty TUI theme. Built on top of a Textual theme (set in app.py). */
+
+Screen {
+    background: $background;
+}
+
+/* ---- Sidebar navigation ---- */
+#sidebar {
+    width: 26;
+    background: $panel;
+    padding: 1 0;
+    border-right: tall $primary;
+}
+
+#sidebar > ListItem {
+    padding: 1 2;
+    color: $text-muted;
+}
+
+#sidebar > ListItem:hover {
+    background: $boost;
+}
+
+#sidebar > ListItem.-highlight {
+    background: $primary 30%;
+    color: $text;
+    text-style: bold;
+}
+
+#sidebar:focus > ListItem.-highlight {
+    background: $primary;
+}
+
+/* ---- Content area ---- */
+#content {
+    padding: 1 2;
+}
+
+.title {
+    text-style: bold;
+    color: $accent;
+    padding: 0 0 1 0;
+}
+
+.subtle {
+    color: $text-muted;
+    padding: 0 0 1 0;
+}
+
+.status {
+    color: $text-muted;
+    padding-top: 1;
+}
+
+/* ---- Cards / panels ---- */
+.panel {
+    border: round $primary;
+    border-title-color: $accent;
+    border-title-style: bold;
+    background: $panel;
+    padding: 1 2;
+    margin: 0 0 1 0;
+    height: auto;
+}
+
+.row {
+    height: auto;
+    margin-bottom: 1;
+}
+
+.actions {
+    height: auto;
+    padding-top: 1;
+}
+
+.actions Button {
+    margin-right: 2;
+}
+
+DataTable {
+    height: auto;
+    max-height: 22;
+    background: $panel;
+}
+
+SelectionList {
+    height: auto;
+    max-height: 14;
+    background: $panel;
+    padding: 0 1;
+}
+
+Tree {
+    height: auto;
+    max-height: 20;
+    background: $panel;
+}
+
+/* ---- AI chat ---- */
+#chat-log {
+    height: 1fr;
+    min-height: 10;
+    background: $panel;
+    border: round $primary;
+    padding: 0 1;
+}
+
+#ask {
+    margin-top: 1;
+}
+
+/* ---- Confirm modal ---- */
+ConfirmModal {
+    align: center middle;
+}
+
+#confirm-box {
+    width: 64;
+    height: auto;
+    padding: 1 2;
+    background: $surface;
+    border: thick $warning;
+}
+
+#confirm-msg {
+    padding-bottom: 1;
+}
+
+#confirm-buttons {
+    height: auto;
+    align-horizontal: right;
+}
+
+#confirm-buttons Button {
+    margin-left: 2;
+}
