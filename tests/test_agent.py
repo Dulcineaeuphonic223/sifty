@@ -11,10 +11,12 @@ from sifty.ai.agent import (
     ToolCallEvent,
     ToolResultEvent,
     _needs_confirm,
+    current_autonomy,
     run,
+    set_autonomy,
 )
 from sifty.ai.client import OllamaClient, OllamaUnavailable
-from sifty.ai.tools import Tool
+from sifty.ai.tools import Tool, ToolResult
 
 
 # ---------------------------------------------------------------------------
@@ -202,3 +204,33 @@ def test_get_unknown_tool():
 def test_ollama_schemas_count():
     schemas = ai_tools.ollama_schemas()
     assert len(schemas) == len(ai_tools.TOOLS)
+
+
+# ---------------------------------------------------------------------------
+# ToolResult (structured table output) flows through the agent
+# ---------------------------------------------------------------------------
+
+def test_tool_result_carries_table(monkeypatch):
+    tool = Tool(
+        name="rep", description="", parameters={"type": "object", "properties": {}},
+        risk="read",
+        handler=lambda a: ToolResult(summary="3 things", columns=["A"], rows=[["1"], ["2"]]),
+    )
+    client = _fake_client_tool_then_answer(monkeypatch, "rep", {}, "Here you go.")
+    events = list(run(client, [{"role": "user", "content": "go"}], autonomy="ask", tools=[tool]))
+    result_ev = next(e for e in events if isinstance(e, ToolResultEvent))
+    assert result_ev.result == "3 things"          # the concise summary feeds the LLM
+    assert result_ev.table is not None and result_ev.table.has_table
+
+
+# ---------------------------------------------------------------------------
+# Autonomy override persistence
+# ---------------------------------------------------------------------------
+
+def test_autonomy_override_roundtrip(tmp_path, monkeypatch):
+    monkeypatch.setenv("APPDATA", str(tmp_path))
+    assert current_autonomy() == "ask"             # no override, config default
+    assert set_autonomy("full_auto") is True
+    assert current_autonomy() == "full_auto"
+    assert set_autonomy("bogus") is False           # invalid rejected
+    assert current_autonomy() == "full_auto"        # unchanged

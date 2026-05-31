@@ -3,28 +3,44 @@
 Each tool has a name, Ollama-compatible JSON-schema descriptor, a risk tag
 (``"read"`` | ``"low"`` | ``"high"``), and a handler.
 
+Handlers return a :class:`ToolResult` (a concise ``summary`` for the model plus
+optional tabular data the UI renders as a real table) or a plain ``str``.  The
+summary is what gets fed back to the LLM — it is deliberately short so the model
+adds *insight* instead of re-dumping the raw data (which the UI already shows).
+
 Risk levels:
   - ``read``  — no side effects, always runs automatically.
-  - ``low``   — reversible or low-impact (e.g. toggle startup entry).
-  - ``high``  — destructive or hard to reverse (delete files, uninstall app, apply update).
+  - ``low``   — reversible / low-impact (e.g. toggle a startup entry).
+  - ``high``  — destructive or hard to reverse (delete files, uninstall, update).
 
-The autonomy level in config decides which risk tiers need a confirm prompt:
-  - ``ask``           — confirm ``low`` and ``high``.
-  - ``low_risk_auto`` — auto-run ``low``, confirm ``high``.
-  - ``full_auto``     — auto-run all (still routes through safety.trash).
+The autonomy level decides which tiers need a confirm (see :mod:`sifty.ai.agent`).
 """
 
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Any, Callable
+from pathlib import Path
+from typing import Callable
 
 from ..console import human_size
 
 
 # ---------------------------------------------------------------------------
-# Tool dataclass
+# Tool result + Tool dataclasses
 # ---------------------------------------------------------------------------
+
+@dataclass
+class ToolResult:
+    """A tool's output: a short ``summary`` for the LLM + optional table for UI."""
+    summary: str
+    title: str = ""
+    columns: list[str] = field(default_factory=list)
+    rows: list[list[str]] = field(default_factory=list)
+
+    @property
+    def has_table(self) -> bool:
+        return bool(self.columns and self.rows)
+
 
 @dataclass
 class Tool:
@@ -32,7 +48,7 @@ class Tool:
     description: str
     parameters: dict          # JSON Schema for the function's arguments
     risk: str                 # "read" | "low" | "high"
-    handler: Callable[[dict], str]
+    handler: Callable[[dict], "ToolResult | str"]
 
     def to_ollama(self) -> dict:
         """Return the Ollama tool-descriptor for this tool."""
@@ -47,110 +63,146 @@ class Tool:
 
 
 # ---------------------------------------------------------------------------
-# Handlers (call core functions; return human-readable result strings)
+# Handlers (call core functions; return ToolResult)
 # ---------------------------------------------------------------------------
 
-def _handler_scan_junk(_args: dict) -> str:
+def _handler_scan_junk(_args: dict) -> ToolResult:
     from ..core import junk
-    cats = junk.scan()
+    cats = [c for c in junk.scan() if c.size > 0]
     if not cats:
-        return "No junk found."
-    lines = [f"Junk scan — {sum(c.size for c in cats) / 1024**3:.2f} GB reclaimable:"]
-    for c in cats:
-        if c.size > 0:
-            lines.append(f"  {c.category.key}: {c.category.label} — {human_size(c.size)} ({c.file_count} files)")
-    return "\n".join(lines)
+        return ToolResult(summary="No junk found — the machine is already tidy.")
+    total = sum(c.size for c in cats)
+    rows = [[c.category.key, c.category.label, human_size(c.size), f"{c.file_count:,}"]
+            for c in cats]
+    summary = (
+        f"Found {human_size(total)} of removable junk across {len(cats)} categories "
+        f"(keys: {', '.join(c.category.key for c in cats)}). Shown to the user as a table."
+    )
+    return ToolResult(summary=summary, title="Junk by category",
+                      columns=["Key", "Category", "Size", "Files"], rows=rows)
 
 
-def _handler_analyze_disk(args: dict) -> str:
+def _handler_analyze_disk(args: dict) -> ToolResult:
     from ..core import disk
-    path = args.get("path", "")
+    raw = args.get("path", "")
+    path = Path(raw).expanduser()
+    if not path.exists():
+        return ToolResult(summary=f"Path does not exist: {path}")
     try:
         items = disk.biggest(path, 20)
-    except (OSError, ValueError) as exc:
-        return f"Error: {exc}"
+    except OSError as exc:
+        return ToolResult(summary=f"Could not read {path}: {exc}")
     if not items:
-        return f"No files found in {path}."
-    lines = [f"Largest items in {path}:"]
-    for entry, size in items:
-        lines.append(f"  {entry.name} — {human_size(size)}")
-    return "\n".join(lines)
+        return ToolResult(summary=f"No files found in {path}.")
+    rows = [[entry.name, human_size(size)] for entry, size in items]
+    top = ", ".join(f"{e.name} ({human_size(s)})" for e, s in items[:3])
+    return ToolResult(
+        summary=f"Largest items in {path}: {top}. Full list shown to the user as a table.",
+        title=f"Largest items in {path}", columns=["Item", "Size"], rows=rows,
+    )
 
 
-def _handler_find_duplicates(args: dict) -> str:
+def _handler_find_duplicates(args: dict) -> ToolResult:
     from ..core import disk
-    path = args.get("path", "")
+    raw = args.get("path", "")
+    path = Path(raw).expanduser()
+    if not path.exists():
+        return ToolResult(summary=f"Path does not exist: {path}")
     try:
-        groups = disk.find_duplicates(path)
-    except (OSError, ValueError) as exc:
-        return f"Error: {exc}"
+        groups = [g for g in disk.find_duplicates(path).values() if len(g) > 1]
+    except OSError as exc:
+        return ToolResult(summary=f"Could not scan {path}: {exc}")
     if not groups:
-        return f"No duplicates found in {path}."
-    wasted = sum(g[0].stat().st_size * (len(g) - 1) for g in groups if g)
-    lines = [f"Found {len(groups)} duplicate group(s), ~{human_size(wasted)} wasted:"]
-    for g in groups[:5]:
-        lines.append(f"  {len(g)} copies of '{g[0].name}'")
-    if len(groups) > 5:
-        lines.append(f"  … and {len(groups) - 5} more group(s)")
-    return "\n".join(lines)
+        return ToolResult(summary=f"No duplicate files found in {path}.")
+    wasted = 0
+    rows = []
+    for g in groups:
+        try:
+            size = g[0].stat().st_size
+        except OSError:
+            size = 0
+        wasted += size * (len(g) - 1)
+        rows.append([str(len(g)), g[0].name, human_size(size * (len(g) - 1))])
+    rows.sort(key=lambda r: r[1])
+    return ToolResult(
+        summary=f"Found {len(groups)} duplicate groups wasting ~{human_size(wasted)} in {path}. "
+                f"Suggest the user review them in the Cleanup screen (keep-one, trash the rest).",
+        title=f"Duplicates in {path}", columns=["Copies", "File", "Wasted"], rows=rows,
+    )
 
 
-def _handler_list_apps(_args: dict) -> str:
+def _handler_list_apps(_args: dict) -> ToolResult:
     from ..core.apps import installed_apps
-    apps = installed_apps()
+    apps = sorted(installed_apps(), key=lambda a: a.size_bytes, reverse=True)
     if not apps:
-        return "No apps found."
-    lines = [f"Installed apps ({len(apps)}):"]
-    for a in sorted(apps, key=lambda x: x.size_bytes, reverse=True)[:20]:
-        size = human_size(a.size_bytes) if a.size_bytes else "?"
-        lines.append(f"  {a.name} ({a.version}) — {size}")
-    if len(apps) > 20:
-        lines.append(f"  … and {len(apps) - 20} more")
-    return "\n".join(lines)
+        return ToolResult(summary="No installed apps found.")
+    rows = [[a.name, a.version or "—", human_size(a.size_bytes) if a.size_bytes else "—"]
+            for a in apps[:25]]
+    biggest = ", ".join(f"{a.name} ({human_size(a.size_bytes)})" for a in apps[:3] if a.size_bytes)
+    return ToolResult(
+        summary=f"{len(apps)} apps installed. Largest: {biggest}. "
+                f"Full list shown to the user as a table — do not repeat it.",
+        title="Installed apps (largest first)", columns=["Name", "Version", "Size"], rows=rows,
+    )
 
 
-def _handler_clean_junk(args: dict) -> str:
+def _handler_list_updates(_args: dict) -> ToolResult:
+    from ..core.updates import list_upgrades
+    ups = list_upgrades()
+    if not ups:
+        return ToolResult(summary="All apps are up to date — no updates pending.")
+    rows = [[u.name, u.current, u.available] for u in ups]
+    names = ", ".join(u.name for u in ups[:5])
+    return ToolResult(
+        summary=f"{len(ups)} update(s) available: {names}"
+                f"{' …' if len(ups) > 5 else ''}. Shown to the user as a table. "
+                f"To apply one, use apply_updates with the package id.",
+        title="Pending updates", columns=["App", "Current", "Available"], rows=rows,
+    )
+
+
+def _handler_clean_junk(args: dict) -> ToolResult:
     from ..core import junk
     categories = args.get("categories") or []
     only = set(categories) if categories else None
     result = junk.clean(only=only, dry_run=False)
-    return (
-        f"Cleaned: {result.items} items ({human_size(result.bytes_freed)}) moved to the Recycle Bin."
-        if result.items else "Nothing was cleaned."
+    if not result.items:
+        return ToolResult(summary="Nothing was cleaned (no matching junk found).")
+    return ToolResult(
+        summary=f"Cleaned {result.items} items ({human_size(result.bytes_freed)}) "
+                f"to the Recycle Bin. The user can undo this from the Reports screen."
     )
 
 
-def _handler_uninstall_app(args: dict) -> str:
+def _handler_uninstall_app(args: dict) -> ToolResult:
     from ..core.apps import uninstall_app
     name = args.get("name", "")
     ok, message = uninstall_app(name)
-    return f"Uninstall {'succeeded' if ok else 'failed'}: {message}"
+    return ToolResult(summary=f"Uninstall of '{name}' {'succeeded' if ok else 'failed'}: {message}")
 
 
-def _handler_toggle_startup(args: dict) -> str:
+def _handler_toggle_startup(args: dict) -> ToolResult:
     from ..core import startup
     name = args.get("name", "")
     enable = bool(args.get("enable", True))
-    verb = "enable" if enable else "disable"
-    entries = [e for e in startup.startup_entries() if e.name == name]
-    if not entries:
-        return f"No startup entry named '{name}' found."
-    entry = entries[0]
-    try:
-        if enable:
-            startup.enable(entry)
-        else:
-            startup.disable(entry)
-        return f"Startup entry '{name}' {verb}d."
-    except Exception as exc:
-        return f"Failed to {verb} '{name}': {exc}"
+    verb = "enabled" if enable else "disabled"
+    ok = startup.set_enabled(name, enable)
+    if ok:
+        return ToolResult(summary=f"Startup entry '{name}' {verb}.")
+    return ToolResult(
+        summary=f"Could not {('enable' if enable else 'disable')} '{name}' — "
+                f"it may not exist or is already in that state."
+    )
 
 
-def _handler_apply_updates(args: dict) -> str:
+def _handler_apply_updates(args: dict) -> ToolResult:
     from ..core.updates import apply_upgrades
-    pkg_id = args.get("id", "")
-    ok, message = apply_upgrades([pkg_id])
-    return f"Update {'succeeded' if ok else 'failed'}: {message}"
+    pkg_id = args.get("id") or None
+    code = apply_upgrades(pkg_id)
+    target = pkg_id or "all pending updates"
+    if code == 0:
+        return ToolResult(summary=f"Update of {target} completed successfully.")
+    return ToolResult(summary=f"Update of {target} exited with code {code} (it may have failed).")
 
 
 # ---------------------------------------------------------------------------
@@ -160,7 +212,7 @@ def _handler_apply_updates(args: dict) -> str:
 TOOLS: list[Tool] = [
     Tool(
         name="scan_junk",
-        description="Scan for junk files (temp files, cache, old logs) and return a breakdown by category with sizes.",
+        description="Scan for junk files (temp files, caches, old logs) and return a breakdown by category with sizes and category keys.",
         parameters={"type": "object", "properties": {}, "required": []},
         risk="read",
         handler=_handler_scan_junk,
@@ -171,7 +223,7 @@ TOOLS: list[Tool] = [
         parameters={
             "type": "object",
             "properties": {
-                "path": {"type": "string", "description": "Absolute directory path to analyze, e.g. C:\\Users\\User\\Downloads"}
+                "path": {"type": "string", "description": "Absolute directory path, e.g. C:\\Users\\User\\Downloads"}
             },
             "required": ["path"],
         },
@@ -193,10 +245,17 @@ TOOLS: list[Tool] = [
     ),
     Tool(
         name="list_apps",
-        description="List installed applications sorted by size.",
+        description="List installed applications (name, version, size), largest first.",
         parameters={"type": "object", "properties": {}, "required": []},
         risk="read",
         handler=_handler_list_apps,
+    ),
+    Tool(
+        name="list_updates",
+        description="List applications that have updates available (via winget). Use this when the user asks what needs updating.",
+        parameters={"type": "object", "properties": {}, "required": []},
+        risk="read",
+        handler=_handler_list_updates,
     ),
     Tool(
         name="clean_junk",
@@ -207,7 +266,7 @@ TOOLS: list[Tool] = [
                 "categories": {
                     "type": "array",
                     "items": {"type": "string"},
-                    "description": "Junk category keys to clean, e.g. ['user-temp', 'browser-cache']. Use scan_junk first to see available keys.",
+                    "description": "Junk category keys to clean, e.g. ['user-temp']. Call scan_junk first to get valid keys.",
                 }
             },
             "required": ["categories"],
@@ -217,11 +276,11 @@ TOOLS: list[Tool] = [
     ),
     Tool(
         name="uninstall_app",
-        description="Uninstall an application by its display name (uses winget).",
+        description="Uninstall an application by its display name or winget package id.",
         parameters={
             "type": "object",
             "properties": {
-                "name": {"type": "string", "description": "Application display name or winget package ID"}
+                "name": {"type": "string", "description": "Application display name or winget package id"}
             },
             "required": ["name"],
         },
@@ -230,7 +289,7 @@ TOOLS: list[Tool] = [
     ),
     Tool(
         name="toggle_startup",
-        description="Enable or disable a Windows startup entry.",
+        description="Enable or disable a Windows startup entry by name (reversible).",
         parameters={
             "type": "object",
             "properties": {
@@ -244,13 +303,13 @@ TOOLS: list[Tool] = [
     ),
     Tool(
         name="apply_updates",
-        description="Apply a pending software update by its winget package ID.",
+        description="Apply a pending software update by its winget package id (omit id to update everything).",
         parameters={
             "type": "object",
             "properties": {
-                "id": {"type": "string", "description": "winget package ID, e.g. 'Microsoft.PowerToys'"}
+                "id": {"type": "string", "description": "winget package id, e.g. 'Microsoft.PowerToys'"}
             },
-            "required": ["id"],
+            "required": [],
         },
         risk="high",
         handler=_handler_apply_updates,
