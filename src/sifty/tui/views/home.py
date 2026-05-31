@@ -1,4 +1,4 @@
-"""Home dashboard: volume gauges + an at-a-glance summary of every area."""
+"""Home dashboard: volume gauges + individual at-a-glance stat blocks."""
 
 from __future__ import annotations
 
@@ -7,6 +7,7 @@ import logging
 from rich.text import Text
 from textual import work
 from textual.app import ComposeResult
+from textual.containers import Horizontal
 from textual.widgets import Button, Static
 
 from ...console import human_size
@@ -19,22 +20,20 @@ from .base import BaseView
 
 logger = logging.getLogger("sifty.tui")
 
-# (key, label) for each at-a-glance stat line, in display order.
-_STATS = [
-    ("junk", "Junk"),
-    ("updates", "Updates"),
-    ("apps", "Apps"),
-    ("startup", "Startup"),
-    ("services", "Services"),
-    ("history", "History"),
-]
-
 
 class HomeView(BaseView):
     def compose(self) -> ComposeResult:
         yield Static("Overview", classes="title")
         yield Panel(Static("Reading volumes…", id="vol-body"), title="Volumes")
-        yield Panel(Static("", id="stats-body"), title="At a glance")
+        with Horizontal(classes="stat-row"):
+            yield Panel(Static("…", id="junk-summary"), title="Junk")
+            yield Panel(Static("checking…", id="updates-summary"), title="Updates")
+        with Horizontal(classes="stat-row"):
+            yield Panel(Static("…", id="apps-summary"), title="Apps")
+            yield Panel(Static("…", id="startup-summary"), title="Startup")
+        with Horizontal(classes="stat-row"):
+            yield Panel(Static("…", id="services-summary"), title="Services")
+            yield Panel(Static("…", id="history-summary"), title="History")
         if not is_admin():
             with Panel(title="Administrator"):
                 yield Static(
@@ -50,11 +49,8 @@ class HomeView(BaseView):
             )
 
     def on_mount(self) -> None:
-        self._stats: dict[str, str] = {k: "…" for k, _ in _STATS}
         self._render_volumes()  # fast (psutil), no worker needed
-        self._stats["updates"] = "checking…"
-        self._stats["history"] = self._history_text()  # fast (sqlite)
-        self._render_stats()
+        self._set("history-summary", self._history_text())  # fast (sqlite)
         if self.workers_enabled():
             self.compute_junk()
             self.compute_apps()
@@ -67,6 +63,12 @@ class HomeView(BaseView):
             self.app.action_elevate()
 
     # ----------------------------------------------------------------- render
+    def _set(self, widget_id: str, text) -> None:
+        try:
+            self.query_one(f"#{widget_id}", Static).update(text)
+        except Exception:
+            pass
+
     def _render_volumes(self) -> None:
         text = Text()
         for i, v in enumerate(disk.volumes()):
@@ -78,21 +80,7 @@ class HomeView(BaseView):
                 style="bold",
             )
             text.append(usage_gauge(v.percent))
-        try:
-            self.query_one("#vol-body", Static).update(text)
-        except Exception:
-            pass
-
-    def _render_stats(self) -> None:
-        lines = "\n".join(f"[b]{label:<9}[/b] {self._stats[key]}" for key, label in _STATS)
-        try:
-            self.query_one("#stats-body", Static).update(lines)
-        except Exception:
-            pass
-
-    def _set_stat(self, key: str, value: str) -> None:
-        self._stats[key] = value
-        self._render_stats()
+        self._set("vol-body", text)
 
     def _history_text(self) -> str:
         try:
@@ -111,7 +99,7 @@ class HomeView(BaseView):
         except Exception:
             logger.exception("Home: junk total scan failed")
             return
-        self.app.call_from_thread(self._set_stat, "junk", f"[b]{human_size(total)}[/b] reclaimable")
+        self.app.call_from_thread(self._set, "junk-summary", f"[b]{human_size(total)}[/b] reclaimable")
 
     @work(thread=True, exclusive=True, group="home-apps")
     def compute_apps(self) -> None:
@@ -122,10 +110,11 @@ class HomeView(BaseView):
             return
         if installed:
             largest = max(installed, key=lambda a: a.size_bytes)
-            value = f"[b]{len(installed)}[/b] installed · largest {largest.name} ({human_size(largest.size_bytes)})"
+            value = (f"[b]{len(installed)}[/b] installed\nlargest: {largest.name} "
+                     f"({human_size(largest.size_bytes)})")
         else:
             value = "none found"
-        self.app.call_from_thread(self._set_stat, "apps", value)
+        self.app.call_from_thread(self._set, "apps-summary", value)
 
     @work(thread=True, exclusive=True, group="home-startup")
     def compute_startup(self) -> None:
@@ -135,7 +124,7 @@ class HomeView(BaseView):
             logger.exception("Home: startup summary failed")
             return
         enabled = sum(1 for e in entries if e.enabled)
-        self.app.call_from_thread(self._set_stat, "startup", f"[b]{len(entries)}[/b] programs · {enabled} enabled")
+        self.app.call_from_thread(self._set, "startup-summary", f"[b]{len(entries)}[/b] programs · {enabled} enabled")
 
     @work(thread=True, exclusive=True, group="home-services")
     def compute_services(self) -> None:
@@ -146,7 +135,7 @@ class HomeView(BaseView):
             return
         present = sum(1 for s in items if s.present)
         disabled = sum(1 for s in items if s.start_type == "disabled")
-        self.app.call_from_thread(self._set_stat, "services", f"[b]{present}[/b] optional · {disabled} disabled")
+        self.app.call_from_thread(self._set, "services-summary", f"[b]{present}[/b] optional · {disabled} disabled")
 
     @work(thread=True, exclusive=True, group="home-updates")
     def compute_updates(self) -> None:
@@ -159,4 +148,4 @@ class HomeView(BaseView):
         except Exception:
             logger.exception("Home: updates summary failed")
             return
-        self.app.call_from_thread(self._set_stat, "updates", value)
+        self.app.call_from_thread(self._set, "updates-summary", value)

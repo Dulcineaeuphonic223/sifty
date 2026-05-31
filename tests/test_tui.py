@@ -53,14 +53,14 @@ def test_command_palette_entries_cover_sections_and_admin():
     assert len(entries) == len(SECTIONS) + 1
 
 
-async def test_home_shows_at_a_glance_stats():
+async def test_home_has_individual_stat_blocks():
     async with _make_app().run_test() as pilot:
         await pilot.pause()
-        body = pilot.app.screen.query_one("#stats-body", Static)
-        rendered = str(body.render())
-        # Every area is labelled in the at-a-glance panel.
-        for label in ("Junk", "Updates", "Apps", "Startup", "Services", "History"):
-            assert label in rendered
+        # One bordered block per area, each with its own content widget.
+        for wid in ("junk-summary", "updates-summary", "apps-summary",
+                    "startup-summary", "services-summary", "history-summary"):
+            block = pilot.app.screen.query_one(f"#{wid}", Static)
+            assert block.region.height > 0  # actually rendered (not collapsed)
 
 
 async def test_command_palette_registered():
