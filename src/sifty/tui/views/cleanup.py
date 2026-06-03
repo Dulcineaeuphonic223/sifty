@@ -12,6 +12,7 @@ from textual.widgets import Button, DataTable, Input, Static
 
 from ...console import human_size
 from ...core import cleanup, disk, history
+from ...core.vcs import find_orphan_worktrees, prune_worktrees
 from ..modals import ConfirmModal
 from ..widgets import Panel
 from .base import BaseView
@@ -29,14 +30,16 @@ class CleanupView(BaseView):
         yield Static("Smart cleanup", classes="title")
         yield Static(
             "Pick a mode, scan, then mark rows (click / Space) and Clean selected. "
-            "Duplicates pre-mark the redundant copies (one kept per group).",
+            "Duplicates pre-mark the redundant copies (one kept per group). "
+            "Worktrees needs a git repo root.",
             classes="subtle",
         )
-        yield Input(value=str(Path.home()), id="cleanup-path", placeholder="Folder (for duplicates / large files)")
+        yield Input(value=str(Path.home()), id="cleanup-path", placeholder="Folder (for duplicates / large files / worktrees)")
         with Horizontal(classes="actions"):
             yield Button("Duplicates", id="mode-duplicates", variant="primary")
             yield Button("Large files", id="mode-large")
             yield Button("Stale downloads", id="mode-stale")
+            yield Button("Worktrees", id="mode-worktrees")
         yield Panel(DataTable(id="cleanup-table"), title="Results", id="cleanup-panel")
         with Horizontal(classes="actions", id="cleanup-actions"):
             yield Button("Select all", id="select-all")
@@ -91,6 +94,10 @@ class CleanupView(BaseView):
             elif mode == "large":
                 rows = cleanup.find_large_files(self._path(), recent_days=7)
                 premark = False
+            elif mode == "worktrees":
+                orphans = find_orphan_worktrees(self._path())
+                rows = [(o.path, disk._entry_size(o.path)) for o in orphans]
+                premark = True
             else:  # stale
                 rows = [(p, s) for p, s, _m in cleanup.find_stale_downloads()]
                 premark = False
@@ -172,7 +179,10 @@ class CleanupView(BaseView):
 
     @work(thread=True, exclusive=True)
     def do_clean(self, paths: list[Path]) -> None:
-        result = cleanup.trash_paths(paths, dry_run=False)
+        if self._mode == "worktrees":
+            result = prune_worktrees(self._path(), dry_run=False)
+        else:
+            result = cleanup.trash_paths(paths, dry_run=False)
         history.record_clean(
             f"cleanup-{self._mode}", str(self._path()),
             result.bytes_freed, result.items, result.trashed,
