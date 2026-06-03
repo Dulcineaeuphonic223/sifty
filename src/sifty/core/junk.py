@@ -83,6 +83,66 @@ def junk_categories(config=None) -> list[JunkCategory]:
             JunkCategory(
                 "downloads-installers", "Leftover installers",
                 "Installer files (.exe/.msi) in Downloads.", [downloads],
+                file_filter=_downloads_installer_filter,
+            )
+        )
+
+    # ---- optional / off-by-default categories --------------------------------
+
+    if config.section("junk").get("include_windows_old"):
+        sys_drive = os.environ.get("SystemDrive", "C:")
+        win_old = Path(sys_drive + "\\Windows.old")
+        cats.append(
+            JunkCategory(
+                "windows-old", "Windows.old (post-upgrade)",
+                "Previous Windows installation left after a feature update (often 15-30 GB).",
+                [win_old],
+                requires_admin=True,
+            )
+        )
+
+    # ---- always-available additional categories ------------------------------
+
+    local = _local_appdata()
+
+    winget_dl = Path(os.environ.get("LOCALAPPDATA", "")) / "Temp" / "WinGet" if local else None
+    if winget_dl and winget_dl.parent.exists():
+        cats.append(
+            JunkCategory(
+                "winget-cache", "WinGet download cache",
+                "Temporary installer files downloaded by WinGet.", [winget_dl],
+            )
+        )
+
+    winevt = Path(os.environ.get("SystemRoot", r"C:\Windows")) / "System32" / "winevt" / "Logs"
+    cats.append(
+        JunkCategory(
+            "event-log-archives", "Archived event logs",
+            "Old Windows event log archives (Archive-*.evtx). Active logs are untouched.",
+            [winevt],
+            requires_admin=True,
+            file_filter=_event_log_archive_filter,
+        )
+    )
+
+    defender_history = Path(os.environ.get("ProgramData", r"C:\ProgramData")) / (
+        "Microsoft" / Path("Windows Defender") / "Scans" / "History" / "Service" / "DetectionHistory"
+    )
+    cats.append(
+        JunkCategory(
+            "defender-history", "Defender detection history",
+            "Windows Defender scan detection history logs (safe to remove).",
+            [defender_history],
+            requires_admin=True,
+        )
+    )
+
+    if local:
+        od_logs = local / "Microsoft" / "OneDrive" / "logs"
+        cats.append(
+            JunkCategory(
+                "onedrive-logs", "OneDrive sync logs",
+                "OneDrive diagnostic logs (rebuilt automatically).", [od_logs],
             )
         )
 
@@ -104,6 +164,23 @@ def _dir_size(path: Path) -> tuple[int, int]:
     return total, count
 
 
+def _filtered_size(root: Path, file_filter) -> tuple[int, int]:
+    """Like ``_dir_size`` but only counts files that pass ``file_filter``."""
+    total = 0
+    count = 0
+    try:
+        for entry in root.iterdir():
+            if entry.is_file() and file_filter(entry):
+                try:
+                    total += entry.stat(follow_symlinks=False).st_size
+                    count += 1
+                except OSError:
+                    pass
+    except OSError:
+        pass
+    return total, count
+
+
 def scan(config=None, only: set[str] | None = None) -> list[CategoryScan]:
     """Measure each junk category. ``only`` filters by category key."""
     results: list[CategoryScan] = []
@@ -114,17 +191,31 @@ def scan(config=None, only: set[str] | None = None) -> list[CategoryScan]:
         files = 0
         present: list[Path] = []
         for root in cat.roots:
-            if root.exists():
-                present.append(root)
-                size, count = _dir_size(root)
-                total += size
-                files += count
+            try:
+                if not root.exists():
+                    continue
+            except OSError:
+                continue
+            present.append(root)
+            try:
+                if cat.file_filter is not None:
+                    size, count = _filtered_size(root, cat.file_filter)
+                else:
+                    size, count = _dir_size(root)
+            except OSError:
+                size, count = 0, 0
+            total += size
+            files += count
         results.append(CategoryScan(cat, total, files, present))
     return results
 
 
 def _downloads_installer_filter(path: Path) -> bool:
     return path.suffix.lower() in {".exe", ".msi"}
+
+
+def _event_log_archive_filter(path: Path) -> bool:
+    return path.name.startswith("Archive-") and path.suffix.lower() == ".evtx"
 
 
 def clean(
@@ -158,8 +249,8 @@ def clean(
                 skipped.append(f"{root}: {exc}")
                 continue
             for entry in entries:
-                if cat.key == "downloads-installers" and not (
-                    entry.is_file() and _downloads_installer_filter(entry)
+                if cat.file_filter is not None and not (
+                    entry.is_file() and cat.file_filter(entry)
                 ):
                     continue
                 try:

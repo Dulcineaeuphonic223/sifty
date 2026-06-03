@@ -195,6 +195,66 @@ def _handler_toggle_startup(args: dict) -> ToolResult:
     )
 
 
+def _handler_scan_artifacts(args: dict) -> ToolResult:
+    from ..core.purge import scan_artifacts
+    raw = args.get("path", "")
+    path = Path(raw).expanduser()
+    if not path.exists():
+        return ToolResult(summary=f"Path does not exist: {path}")
+    artifacts = scan_artifacts(path)
+    if not artifacts:
+        return ToolResult(summary=f"No artifact directories found under {path}.")
+    total = sum(a.size_bytes for a in artifacts)
+    rows = [[a.pattern, human_size(a.size_bytes), str(a.path)] for a in artifacts]
+    top = ", ".join(f"{a.pattern} ({human_size(a.size_bytes)})" for a in artifacts[:3])
+    return ToolResult(
+        summary=f"Found {len(artifacts)} artifact directories ({human_size(total)}) in {path}. "
+                f"Largest: {top}. Full list shown as table.",
+        title=f"Artifact directories in {path}",
+        columns=["Pattern", "Size", "Path"],
+        rows=rows,
+    )
+
+
+def _handler_purge_artifacts(args: dict) -> ToolResult:
+    from ..core.purge import purge_artifacts, scan_artifacts
+    raw = args.get("path", "")
+    path = Path(raw).expanduser()
+    if not path.exists():
+        return ToolResult(summary=f"Path does not exist: {path}")
+    artifacts = scan_artifacts(path)
+    if not artifacts:
+        return ToolResult(summary=f"No artifact directories found under {path}.")
+    result = purge_artifacts([a.path for a in artifacts], dry_run=False)
+    return ToolResult(
+        summary=f"Purged {result.items} artifact directories ({human_size(result.bytes_freed)}) "
+                f"to the Recycle Bin under {path}."
+                + (f" {len(result.skipped)} skipped." if result.skipped else "")
+    )
+
+
+def _handler_optimize_system(_args: dict) -> ToolResult:
+    from ..core.optimize import list_operations, run_op
+    from ..windows.admin import is_admin
+    admin = is_admin()
+    ops = [op for op in list_operations() if not op.requires_admin or admin]
+    if not ops:
+        return ToolResult(summary="No operations available without administrator rights.")
+    results = []
+    for op in ops:
+        ok, msg = run_op(op, dry_run=False)
+        results.append([op.label, "ok" if ok else "failed", msg])
+    summary = f"Ran {len(ops)} optimization operations: " + ", ".join(
+        op.label for op in ops
+    ) + "."
+    return ToolResult(
+        summary=summary,
+        title="Optimization results",
+        columns=["Operation", "Status", "Detail"],
+        rows=results,
+    )
+
+
 def _handler_system_status(_args: dict) -> ToolResult:
     from ..core.monitor import fmt_rate, snapshot
     snap = snapshot()   # blocks ~1 s — cpu_percent(interval=1) inside
@@ -347,6 +407,39 @@ TOOLS: list[Tool] = [
         parameters={"type": "object", "properties": {}, "required": []},
         risk="read",
         handler=_handler_system_status,
+    ),
+    Tool(
+        name="scan_project_artifacts",
+        description="Scan a directory for dev artifact directories (node_modules, dist, __pycache__, target, etc.) and report their sizes.",
+        parameters={
+            "type": "object",
+            "properties": {
+                "path": {"type": "string", "description": "Root directory to scan, e.g. C:\\Users\\User\\Projects"}
+            },
+            "required": ["path"],
+        },
+        risk="read",
+        handler=_handler_scan_artifacts,
+    ),
+    Tool(
+        name="purge_artifacts",
+        description="Remove dev artifact directories (node_modules, dist, __pycache__, etc.) under a path by sending them to the Recycle Bin.",
+        parameters={
+            "type": "object",
+            "properties": {
+                "path": {"type": "string", "description": "Root directory whose artifacts should be purged"}
+            },
+            "required": ["path"],
+        },
+        risk="high",
+        handler=_handler_purge_artifacts,
+    ),
+    Tool(
+        name="optimize_system",
+        description="Run non-destructive system optimization: flush DNS cache, rebuild thumbnail cache, and other safe cache-clearing operations.",
+        parameters={"type": "object", "properties": {}, "required": []},
+        risk="low",
+        handler=_handler_optimize_system,
     ),
 ]
 

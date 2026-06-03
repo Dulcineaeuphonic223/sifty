@@ -1,0 +1,95 @@
+"""Tests for the dev-artifact purge engine (sandboxed)."""
+
+from __future__ import annotations
+
+from pathlib import Path
+from unittest.mock import patch
+
+from sifty.core import purge, safety
+
+
+def _make_tree(root: Path, structure: dict) -> None:
+    for name, content in structure.items():
+        child = root / name
+        if isinstance(content, dict):
+            child.mkdir(parents=True, exist_ok=True)
+            _make_tree(child, content)
+        else:
+            child.parent.mkdir(parents=True, exist_ok=True)
+            child.write_bytes(b"x" * content)
+
+
+def test_scan_finds_artifact_dirs(tmp_path):
+    _make_tree(tmp_path, {
+        "myapp": {
+            "src": {"main.py": 100},
+            "node_modules": {"pkg": {"index.js": 500}},
+            "dist": {"bundle.js": 1000},
+        }
+    })
+    results = purge.scan_artifacts(tmp_path)
+    patterns = {a.pattern for a in results}
+    assert "node_modules" in patterns
+    assert "dist" in patterns
+    # src is not an artifact dir
+    assert "src" not in patterns
+
+
+def test_scan_does_not_descend_into_matched_dir(tmp_path):
+    # nested node_modules inside node_modules must not be double-counted
+    _make_tree(tmp_path, {
+        "project": {
+            "node_modules": {
+                "pkg": {
+                    "node_modules": {"sub": {"f.js": 200}},
+                    "index.js": 100,
+                }
+            }
+        }
+    })
+    results = purge.scan_artifacts(tmp_path)
+    # Only the top-level node_modules should appear once
+    assert len(results) == 1
+    assert results[0].pattern == "node_modules"
+
+
+def test_scan_skips_protected_paths(tmp_path, monkeypatch):
+    (tmp_path / "dist").mkdir()
+    (tmp_path / "dist" / "file.js").write_bytes(b"x" * 100)
+    # Patch is_protected in the purge module's own namespace (it was imported there)
+    monkeypatch.setattr("sifty.core.purge.is_protected", lambda *a, **k: True)
+    results = purge.scan_artifacts(tmp_path)
+    assert results == []
+
+
+def test_purge_artifacts_dry_run(tmp_path):
+    art = tmp_path / "node_modules"
+    art.mkdir()
+    (art / "index.js").write_bytes(b"x" * 200)
+    result = purge.purge_artifacts([art], dry_run=True)
+    assert result.items == 1
+    assert result.bytes_freed > 0
+    assert art.exists()   # dry-run must NOT delete
+
+
+def test_purge_artifacts_apply(tmp_path, monkeypatch):
+    art = tmp_path / "__pycache__"
+    art.mkdir()
+    (art / "mod.pyc").write_bytes(b"x" * 300)
+    trashed = []
+    # Patch safety.trash directly — that's the single deletion call site
+    monkeypatch.setattr("sifty.core.purge.trash", lambda p, **kw: trashed.append(p))
+    result = purge.purge_artifacts([art], dry_run=False)
+    assert result.items == 1
+    assert len(trashed) == 1
+
+
+def test_scan_respects_extra_patterns(tmp_path):
+    (tmp_path / "my_custom_cache").mkdir()
+    (tmp_path / "my_custom_cache" / "data.bin").write_bytes(b"x" * 100)
+    # Not in ARTIFACT_DIRS, so should not appear without config
+    results = purge.scan_artifacts(tmp_path)
+    assert all(a.pattern != "my_custom_cache" for a in results)
+    # With custom config
+    results2 = purge.scan_artifacts(tmp_path, patterns=frozenset({"my_custom_cache"}))
+    assert any(a.pattern == "my_custom_cache" for a in results2)

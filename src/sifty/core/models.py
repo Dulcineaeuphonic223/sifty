@@ -8,6 +8,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from pathlib import Path
+from typing import Callable
 
 
 @dataclass
@@ -17,6 +18,10 @@ class JunkCategory:
     description: str
     roots: list[Path] = field(default_factory=list)
     requires_admin: bool = False
+    # Optional per-entry filter: only files where filter(path) is True are
+    # counted and deleted. Used for categories where the root contains a mix
+    # of safe and unsafe files (e.g. event-log-archives inside the Logs dir).
+    file_filter: Callable[[Path], bool] | None = None
 
 
 @dataclass

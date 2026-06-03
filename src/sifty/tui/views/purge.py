@@ -1,0 +1,166 @@
+"""Purge screen: find and remove dev artifact directories."""
+
+from __future__ import annotations
+
+import logging
+from pathlib import Path
+
+from textual import work
+from textual.app import ComposeResult
+from textual.containers import Horizontal
+from textual.widgets import Button, DataTable, Input, Static
+
+from ...console import human_size
+from ...core import history, purge
+from ..modals import ConfirmModal
+from ..widgets import Panel
+from .base import BaseView
+
+logger = logging.getLogger("sifty.tui")
+
+_MARK = "✓"
+_UNMARK = " "
+
+
+class PurgeView(BaseView):
+    BINDINGS = [("space", "toggle_mark", "Mark")]
+
+    def compose(self) -> ComposeResult:
+        yield Static("Dev artifact purge", classes="title")
+        yield Static(
+            "Scans a project tree for node_modules, dist, __pycache__, target, and "
+            "other build artefacts. Mark rows (click / Space) and purge selected.",
+            classes="subtle",
+        )
+        yield Input(value=str(Path.home()), id="purge-path", placeholder="Project root to scan")
+        with Horizontal(classes="actions"):
+            yield Button("Scan", id="scan", variant="primary")
+        yield Panel(DataTable(id="purge-table"), title="Artifact directories", id="purge-panel")
+        with Horizontal(classes="actions", id="purge-actions"):
+            yield Button("Select all", id="select-all")
+            yield Button("Deselect all", id="deselect-all")
+            yield Button("Purge selected", id="purge", variant="warning")
+        yield Static("Enter a project root and press Scan.", id="purge-status", classes="status")
+
+    def on_mount(self) -> None:
+        self._artifacts: list[purge.ArtifactScan] = []
+        self._marked: set[str] = set()
+        table = self.query_one("#purge-table", DataTable)
+        table.cursor_type = "row"
+        self._cols = table.add_columns("", "Pattern", "Size", "Path")
+        self.query_one("#purge-panel").display = False
+        self.query_one("#purge-actions").display = False
+
+    def _path(self) -> Path:
+        return Path(self.query_one("#purge-path", Input).value or str(Path.home())).expanduser()
+
+    def _status(self, msg: str) -> None:
+        self.query_one("#purge-status", Static).update(msg)
+
+    def on_button_pressed(self, event: Button.Pressed) -> None:
+        bid = event.button.id or ""
+        if bid == "scan":
+            self._status(f"Scanning {self._path()}…")
+            self.query_one("#purge-panel").display = True
+            self.query_one("#purge-actions").display = False
+            self.query_one("#purge-table", DataTable).loading = True
+            self.scan()
+        elif bid == "select-all":
+            self._marked = {str(a.path) for a in self._artifacts}
+            self._rebuild_table()
+        elif bid == "deselect-all":
+            self._marked.clear()
+            self._rebuild_table()
+        elif bid == "purge":
+            self._purge_flow()
+
+    @work(thread=True, exclusive=True, group="purge-scan")
+    def scan(self) -> None:
+        try:
+            artifacts = purge.scan_artifacts(self._path())
+        except Exception as exc:
+            logger.exception("Purge scan failed")
+            self.app.call_from_thread(self._scan_failed, exc)
+            return
+        self.app.call_from_thread(self._populate, artifacts)
+
+    def _scan_failed(self, exc: Exception) -> None:
+        self.query_one("#purge-table", DataTable).loading = False
+        self.query_one("#purge-panel").display = False
+        self._status(f"Failed: {exc}")
+
+    def _populate(self, artifacts: list[purge.ArtifactScan]) -> None:
+        self._artifacts = artifacts
+        self._marked = {str(a.path) for a in artifacts}  # pre-mark all
+        self.query_one("#purge-table", DataTable).loading = False
+        if not artifacts:
+            self.query_one("#purge-panel").display = False
+            self.query_one("#purge-actions").display = False
+            self._status("No artifact directories found.")
+            return
+        self.query_one("#purge-panel").display = True
+        self.query_one("#purge-actions").display = True
+        self._rebuild_table()
+
+    def _rebuild_table(self) -> None:
+        table = self.query_one("#purge-table", DataTable)
+        table.clear()
+        for a in self._artifacts:
+            mark = _MARK if str(a.path) in self._marked else _UNMARK
+            table.add_row(mark, a.pattern, human_size(a.size_bytes), str(a.path), key=str(a.path))
+        total = sum(a.size_bytes for a in self._artifacts if str(a.path) in self._marked)
+        self._status(
+            f"{len(self._artifacts)} directories · {len(self._marked)} marked "
+            f"({human_size(total)})"
+        )
+
+    def _toggle_mark(self, key: str) -> None:
+        if key in self._marked:
+            self._marked.discard(key)
+            self.query_one("#purge-table", DataTable).update_cell(key, self._cols[0], _UNMARK)
+        else:
+            self._marked.add(key)
+            self.query_one("#purge-table", DataTable).update_cell(key, self._cols[0], _MARK)
+        total = sum(a.size_bytes for a in self._artifacts if str(a.path) in self._marked)
+        self._status(f"{len(self._artifacts)} directories · {len(self._marked)} marked ({human_size(total)})")
+
+    def action_toggle_mark(self) -> None:
+        table = self.query_one("#purge-table", DataTable)
+        if table.row_count and table.cursor_row is not None and 0 <= table.cursor_row < len(self._artifacts):
+            self._toggle_mark(str(self._artifacts[table.cursor_row].path))
+
+    def on_data_table_row_selected(self, event: DataTable.RowSelected) -> None:
+        if event.row_key and event.row_key.value:
+            self._toggle_mark(event.row_key.value)
+
+    @work
+    async def _purge_flow(self) -> None:
+        if not self._marked:
+            self._status("Nothing marked.")
+            return
+        paths = [Path(k) for k in self._marked]
+        total = sum(a.size_bytes for a in self._artifacts if str(a.path) in self._marked)
+        ok = await self.app.push_screen_wait(
+            ConfirmModal(
+                f"Move {len(paths)} artifact director{'y' if len(paths) == 1 else 'ies'} "
+                f"({human_size(total)}) to the Recycle Bin?",
+                confirm_label="Purge",
+            )
+        )
+        if ok:
+            self._status("Purging…")
+            self.do_purge(paths)
+
+    @work(thread=True, exclusive=True, group="purge-scan")
+    def do_purge(self, paths: list[Path]) -> None:
+        result = purge.purge_artifacts(paths, dry_run=False)
+        history.record_clean("purge", str(self._path()), result.bytes_freed, result.items, result.trashed)
+        self.app.call_from_thread(self._after_purge, result.bytes_freed, result.items, len(result.skipped))
+
+    def _after_purge(self, freed: int, items: int, skipped: int) -> None:
+        self.app.notify(
+            f"Purged {items} director{'y' if items == 1 else 'ies'} ({human_size(freed)})"
+            + (f" · {skipped} skipped" if skipped else ""),
+            title="Purge",
+        )
+        self.scan()

@@ -41,10 +41,17 @@ DEFAULTS: dict[str, Any] = {
         # Whether to offer leftover installers in Downloads as junk (off by
         # default — those are often wanted).
         "include_downloads_installers": False,
+        # Whether to offer Windows.old (post-upgrade leftover) — off by default
+        # since it is a one-time cleanup and can be very large.
+        "include_windows_old": False,
     },
     "watch": {
         # Free-space threshold (GB) below which `sifty watch check` warns/toasts.
         "threshold_gb": 5,
+    },
+    "purge": {
+        # Extra artifact directory names beyond the built-in ARTIFACT_DIRS set.
+        "extra_patterns": [],
     },
     "monitor": {
         # How often the Monitor TUI view refreshes (seconds).
