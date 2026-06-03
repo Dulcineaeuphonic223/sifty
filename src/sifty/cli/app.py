@@ -70,6 +70,75 @@ def tui_cmd() -> None:
     run()
 
 
+@app.command("monitor")
+def monitor_cmd() -> None:
+    """Live system monitor: CPU, memory, disk I/O, network, processes. Ctrl+C to stop."""
+    from rich.columns import Columns
+    from rich.live import Live
+    from rich.panel import Panel
+    from rich.table import Table
+    from rich.text import Text
+
+    from ..core.monitor import SystemSnapshot, fmt_rate, snapshot
+    from ..tui.widgets import usage_gauge
+
+    def _gauge_panel(title: str, pct: float) -> Panel:
+        color = "#f7768e" if pct >= 90 else "#e0af68" if pct >= 75 else "#9ece6a"
+        body = Text()
+        body.append(f"{pct:.0f}%\n", style=f"bold {color}")
+        body.append(usage_gauge(pct, width=36))
+        return Panel(body, title=title, border_style="#7aa2f7")
+
+    def _io_panel(title: str, label_a: str, val_a: int, label_b: str, val_b: int) -> Panel:
+        body = Text()
+        body.append(f"{label_a}  ", style="bold #7dcfff")
+        body.append(fmt_rate(val_a) + "\n")
+        body.append(f"{label_b}  ", style="bold #9ece6a")
+        body.append(fmt_rate(val_b))
+        return Panel(body, title=title, border_style="#7aa2f7")
+
+    def _proc_table(snap: SystemSnapshot) -> Table:
+        table = Table(show_header=True, header_style="bold #7dcfff", box=None, padding=(0, 1))
+        table.add_column("Process", min_width=28)
+        table.add_column("PID", justify="right", min_width=7)
+        table.add_column("CPU %", justify="right", min_width=7)
+        table.add_column("Memory", justify="right", min_width=10)
+        for p in snap.processes:
+            color = "#f7768e" if p.cpu_percent >= 50 else "#e0af68" if p.cpu_percent >= 20 else ""
+            cpu_cell = Text(f"{p.cpu_percent:.1f}%", style=color) if color else f"{p.cpu_percent:.1f}%"
+            mem = f"{p.memory_mb:.0f} MB" if p.memory_mb >= 1 else f"{p.memory_mb * 1024:.0f} KB"
+            table.add_row(p.name, str(p.pid), cpu_cell, mem)
+        return table
+
+    def _render(snap: SystemSnapshot):
+        from rich.console import Group
+        return Group(
+            Columns([
+                _gauge_panel("CPU", snap.cpu_percent),
+                _gauge_panel(
+                    f"Memory  {snap.memory_used_gb:.1f}/{snap.memory_total_gb:.1f} GB",
+                    snap.memory_percent,
+                ),
+            ]),
+            Columns([
+                _io_panel("Disk I/O", "↓ Read ", snap.disk_read_bytes, "↑ Write", snap.disk_write_bytes),
+                _io_panel("Network", "↑ Sent ", snap.net_sent_bytes, "↓ Recv ", snap.net_recv_bytes),
+            ]),
+            Panel(_proc_table(snap), title="Top processes", border_style="#7aa2f7"),
+            Text("  Ctrl+C to stop", style="dim"),
+        )
+
+    # Show a placeholder until the first real snapshot arrives.
+    first = snapshot()   # snapshot() blocks ~1 s (cpu_percent interval=1)
+    with Live(_render(first), auto_refresh=False, console=console) as live:
+        try:
+            while True:
+                snap = snapshot()
+                live.update(_render(snap), refresh=True)
+        except KeyboardInterrupt:
+            pass
+
+
 @app.command("version")
 def version_cmd() -> None:
     """Show the Sifty version."""

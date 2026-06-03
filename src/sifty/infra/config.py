@@ -46,6 +46,12 @@ DEFAULTS: dict[str, Any] = {
         # Free-space threshold (GB) below which `sifty watch check` warns/toasts.
         "threshold_gb": 5,
     },
+    "monitor": {
+        # How often the Monitor TUI view refreshes (seconds).
+        "refresh_interval_seconds": 2,
+        # CPU % at which the monitor highlights a process in red.
+        "cpu_alert_threshold_percent": 85,
+    },
 }
 
 

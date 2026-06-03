@@ -195,6 +195,33 @@ def _handler_toggle_startup(args: dict) -> ToolResult:
     )
 
 
+def _handler_system_status(_args: dict) -> ToolResult:
+    from ..core.monitor import fmt_rate, snapshot
+    snap = snapshot()   # blocks ~1 s — cpu_percent(interval=1) inside
+    rows = [
+        [p.name, str(p.pid), f"{p.cpu_percent:.1f}%", f"{p.memory_mb:.0f} MB"]
+        for p in snap.processes
+    ]
+    top_str = (
+        f"Top process: {snap.processes[0].name} ({snap.processes[0].cpu_percent:.1f}% CPU). "
+        if snap.processes else ""
+    )
+    summary = (
+        f"CPU: {snap.cpu_percent:.0f}%, "
+        f"Memory: {snap.memory_percent:.0f}% "
+        f"({snap.memory_used_gb:.1f}/{snap.memory_total_gb:.1f} GB used). "
+        f"Disk: {fmt_rate(snap.disk_read_bytes, 1)} read / {fmt_rate(snap.disk_write_bytes, 1)} write. "
+        f"Network: {fmt_rate(snap.net_sent_bytes, 1)} sent / {fmt_rate(snap.net_recv_bytes, 1)} recv. "
+        f"{top_str}Full process list shown to the user as a table."
+    )
+    return ToolResult(
+        summary=summary,
+        title="Live system status",
+        columns=["Process", "PID", "CPU %", "Memory"],
+        rows=rows,
+    )
+
+
 def _handler_apply_updates(args: dict) -> ToolResult:
     from ..core.updates import apply_upgrades
     pkg_id = args.get("id") or None
@@ -313,6 +340,13 @@ TOOLS: list[Tool] = [
         },
         risk="high",
         handler=_handler_apply_updates,
+    ),
+    Tool(
+        name="system_status",
+        description="Get a live snapshot of CPU usage, memory usage, disk I/O, network I/O, and the top processes by CPU.",
+        parameters={"type": "object", "properties": {}, "required": []},
+        risk="read",
+        handler=_handler_system_status,
     ),
 ]
 

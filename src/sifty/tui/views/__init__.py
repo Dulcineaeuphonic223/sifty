@@ -8,6 +8,7 @@ from .cleanup import CleanupView
 from .disk import DiskView
 from .home import HomeView
 from .junk import JunkView
+from .monitor import MonitorView
 from .reports import ReportsView
 from .services import ServicesView
 from .startup import StartupView
@@ -25,6 +26,7 @@ VIEWS = {
     "updates": UpdatesView,
     "reports": ReportsView,
     "ai": AIView,
+    "monitor": MonitorView,
 }
 
 __all__ = [
@@ -39,4 +41,5 @@ __all__ = [
     "UpdatesView",
     "ReportsView",
     "AIView",
+    "MonitorView",
 ]
