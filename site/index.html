@@ -28,11 +28,11 @@
     <a href="#safety">Safety</a>
     <a href="#tui">TUI</a>
     <a href="#install">Install</a>
-    <a class="nav-gh" href="https://github.com/Vortrix5/sifty" rel="noopener">
-      <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path fill="currentColor" d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27s1.36.09 2 .27c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8z"/></svg>
-      <span>GitHub</span>
-    </a>
   </nav>
+  <a class="nav-gh" href="https://github.com/Vortrix5/sifty" rel="noopener">
+    <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path fill="currentColor" d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27s1.36.09 2 .27c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8z"/></svg>
+    <span>GitHub</span>
+  </a>
 </header>
 
 <main id="top">
@@ -68,7 +68,7 @@
         <div class="term-body" id="heroTerm">
           <!-- Static transcript (replaced by the typed animation when JS runs) -->
           <div><span class="c-p">PS C:\&gt;</span> sifty junk scan</div>
-          <pre class="t-out">                                    <span class="c-d t-i">Junk scan</span>
+          <pre class="t-out desktop-only">                                    <span class="c-d t-i">Junk scan</span>
 <span class="c-d">┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━┳━━━━━━━━━━┓</span>
 <span class="c-d">┃</span> <span class="c-b">Category                          </span> <span class="c-d">┃</span> <span class="c-b">Key                 </span> <span class="c-d">┃</span> <span class="c-b"> Files</span> <span class="c-d">┃</span> <span class="c-b">    Size</span> <span class="c-d">┃</span>
 <span class="c-d">┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━╇━━━━━━━━━━┩</span>
@@ -88,6 +88,20 @@
 <span class="c-d">└────────────────────────────────────┴──────────────────────┴────────┴──────────┘</span>
 
 Run <span class="c-cy">sifty junk clean</span> to preview removal (dry-run by default).</pre>
+          <pre class="t-out mobile-only">           <span class="c-d t-i">Junk scan</span>
+<span class="c-d">┏━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━┓</span>
+<span class="c-d">┃</span> <span class="c-b">Category         </span> <span class="c-d">┃</span> <span class="c-b">    Size</span> <span class="c-d">┃</span>
+<span class="c-d">┡━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━┩</span>
+<span class="c-d">│</span> User temp files   <span class="c-d">│</span> 537.0 MB <span class="c-d">│</span>
+<span class="c-d">│</span> Thumbnail cache   <span class="c-d">│</span>  13.1 MB <span class="c-d">│</span>
+<span class="c-d">│</span> Browser caches    <span class="c-d">│</span>   1.2 GB <span class="c-d">│</span>
+<span class="c-d">│</span> WinGet cache      <span class="c-d">│</span> 189.2 KB <span class="c-d">│</span>
+<span class="c-d">│</span> OneDrive logs     <span class="c-d">│</span>  83.1 MB <span class="c-d">│</span>
+<span class="c-d">├───────────────────┼──────────┤</span>
+<span class="c-d">│</span> <span class="c-b">Total reclaimable</span> <span class="c-d">│</span> <span class="c-b">  1.8 GB</span> <span class="c-d">│</span>
+<span class="c-d">└───────────────────┴──────────┘</span>
+
+Run <span class="c-cy">sifty junk clean</span> to preview removal.</pre>
           <div><span class="c-p">PS C:\&gt;</span> sifty junk clean --apply</div>
           <pre class="t-out">Found <span class="c-b">27,803</span> items totalling <span class="c-b">1.8 GB</span>.
 Move 27,803 items (1.8 GB) to the Recycle Bin? [y/N]: y
@@ -151,13 +165,20 @@ Move 27,803 items (1.8 GB) to the Recycle Bin? [y/N]: y
 
       <div class="term-body" data-panel="disk">
         <div><span class="c-p">PS C:\&gt;</span> sifty disk volumes</div>
-        <pre class="t-out">                         <span class="c-d t-i">Volumes</span>
+        <pre class="t-out desktop-only">                         <span class="c-d t-i">Volumes</span>
 <span class="c-d">┏━━━━━━━┳━━━━━━┳━━━━━━━━━━┳━━━━━━━━━┳━━━━━━━━━━┳━━━━━━━━┓</span>
 <span class="c-d">┃</span> <span class="c-b">Drive</span> <span class="c-d">┃</span> <span class="c-b">FS  </span> <span class="c-d">┃</span> <span class="c-b">    Used</span> <span class="c-d">┃</span> <span class="c-b">   Free</span> <span class="c-d">┃</span> <span class="c-b">   Total</span> <span class="c-d">┃</span> <span class="c-b">Used %</span> <span class="c-d">┃</span>
 <span class="c-d">┡━━━━━━━╇━━━━━━╇━━━━━━━━━━╇━━━━━━━━━╇━━━━━━━━━━╇━━━━━━━━┩</span>
 <span class="c-d">│</span> C:\   <span class="c-d">│ NTFS │</span> 177.4 GB <span class="c-d">│</span> 44.7 GB <span class="c-d">│</span> 222.0 GB <span class="c-d">│</span> <span class="c-y">   80%</span> <span class="c-d">│</span>
 <span class="c-d">│</span> E:\   <span class="c-d">│ NTFS │</span> 847.6 GB <span class="c-d">│</span> 83.9 GB <span class="c-d">│</span> 931.5 GB <span class="c-d">│</span> <span class="c-r">   91%</span> <span class="c-d">│</span>
 <span class="c-d">└───────┴──────┴──────────┴─────────┴──────────┴────────┘</span></pre>
+        <pre class="t-out mobile-only">                <span class="c-d t-i">Volumes</span>
+<span class="c-d">┏━━━━━━━┳━━━━━━━━━┳━━━━━━━━━━┳━━━━━━━━┓</span>
+<span class="c-d">┃</span> <span class="c-b">Drive</span> <span class="c-d">┃</span> <span class="c-b">   Free</span> <span class="c-d">┃</span> <span class="c-b">   Total</span> <span class="c-d">┃</span> <span class="c-b">Used %</span> <span class="c-d">┃</span>
+<span class="c-d">┡━━━━━━━╇━━━━━━━━━╇━━━━━━━━━━╇━━━━━━━━┩</span>
+<span class="c-d">│</span> C:\   <span class="c-d">│</span> 44.7 GB <span class="c-d">│</span> 222.0 GB <span class="c-d">│</span> <span class="c-y">   80%</span> <span class="c-d">│</span>
+<span class="c-d">│</span> E:\   <span class="c-d">│</span> 83.9 GB <span class="c-d">│</span> 931.5 GB <span class="c-d">│</span> <span class="c-r">   91%</span> <span class="c-d">│</span>
+<span class="c-d">└───────┴─────────┴──────────┴────────┘</span></pre>
         <div><span class="c-p">PS C:\&gt;</span> sifty disk duplicates D:\Photos</div>
         <pre class="t-out">Found <span class="c-b">316</span> duplicate groups.
 
@@ -306,7 +327,6 @@ Move 27,803 items (1.8 GB) to the Recycle Bin? [y/N]: y
       <article class="card install-card">
         <h3>winget</h3>
         <div class="cmd-line"><code>winget install Vortrix5.Sifty</code><button class="copy-btn" data-copy="winget install Vortrix5.Sifty" aria-label="Copy winget command">copy</button></div>
-        <p>Recently submitted, so it may still be rolling out.</p>
       </article>
     </div>
     <p class="section-foot">On first run, try <code>sifty doctor</code> and then <code>sifty checkup</code>. Both are read-only.</p>
@@ -333,7 +353,7 @@ Move 27,803 items (1.8 GB) to the Recycle Bin? [y/N]: y
 <!-- Animation script for the hero terminal -->
 <template id="heroScript">
   <div data-kind="cmd">sifty junk scan</div>
-  <div data-kind="out"><pre class="t-out">                                    <span class="c-d t-i">Junk scan</span>
+  <div data-kind="out"><pre class="t-out desktop-only">                                    <span class="c-d t-i">Junk scan</span>
 <span class="c-d">┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━┳━━━━━━━━━━┓</span>
 <span class="c-d">┃</span> <span class="c-b">Category                          </span> <span class="c-d">┃</span> <span class="c-b">Key                 </span> <span class="c-d">┃</span> <span class="c-b"> Files</span> <span class="c-d">┃</span> <span class="c-b">    Size</span> <span class="c-d">┃</span>
 <span class="c-d">┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━╇━━━━━━━━━━┩</span>
@@ -352,7 +372,20 @@ Move 27,803 items (1.8 GB) to the Recycle Bin? [y/N]: y
 <span class="c-d">│</span> <span class="c-b">Total reclaimable                 </span> <span class="c-d">│                      │</span>        <span class="c-d">│</span> <span class="c-b">  1.8 GB</span> <span class="c-d">│</span>
 <span class="c-d">└────────────────────────────────────┴──────────────────────┴────────┴──────────┘</span>
 
-Run <span class="c-cy">sifty junk clean</span> to preview removal (dry-run by default).</pre></div>
+Run <span class="c-cy">sifty junk clean</span> to preview removal (dry-run by default).</pre><pre class="t-out mobile-only">           <span class="c-d t-i">Junk scan</span>
+<span class="c-d">┏━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━┓</span>
+<span class="c-d">┃</span> <span class="c-b">Category         </span> <span class="c-d">┃</span> <span class="c-b">    Size</span> <span class="c-d">┃</span>
+<span class="c-d">┡━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━┩</span>
+<span class="c-d">│</span> User temp files   <span class="c-d">│</span> 537.0 MB <span class="c-d">│</span>
+<span class="c-d">│</span> Thumbnail cache   <span class="c-d">│</span>  13.1 MB <span class="c-d">│</span>
+<span class="c-d">│</span> Browser caches    <span class="c-d">│</span>   1.2 GB <span class="c-d">│</span>
+<span class="c-d">│</span> WinGet cache      <span class="c-d">│</span> 189.2 KB <span class="c-d">│</span>
+<span class="c-d">│</span> OneDrive logs     <span class="c-d">│</span>  83.1 MB <span class="c-d">│</span>
+<span class="c-d">├───────────────────┼──────────┤</span>
+<span class="c-d">│</span> <span class="c-b">Total reclaimable</span> <span class="c-d">│</span> <span class="c-b">  1.8 GB</span> <span class="c-d">│</span>
+<span class="c-d">└───────────────────┴──────────┘</span>
+
+Run <span class="c-cy">sifty junk clean</span> to preview removal.</pre></div>
   <div data-kind="pause" data-ms="1400"></div>
   <div data-kind="cmd">sifty junk clean --apply</div>
   <div data-kind="out"><pre class="t-out">Found <span class="c-b">27,803</span> items totalling <span class="c-b">1.8 GB</span>.</pre></div>
