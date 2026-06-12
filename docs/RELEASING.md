@@ -3,13 +3,11 @@
 Sifty ships two artifacts per release, both automated by
 [`.github/workflows/release.yml`](../.github/workflows/release.yml):
 
-1. **PyPI package** (`pip install sifty`) — built and uploaded via PyPI
-   **Trusted Publishing** (OIDC), so no API token is ever stored in the repo.
-2. **`sifty.exe`** — a standalone Windows executable attached to the GitHub
+1. **PyPI package** (`pip install sifty`), built and uploaded via PyPI
+   **Trusted Publishing** (OIDC) against the repo's `pypi` environment, so no
+   API token is ever stored in the repo.
+2. **`sifty.exe`**, a standalone Windows executable attached to the GitHub
    Release (no Python needed to run it).
-
-PyPI publishing is configured via Trusted Publishing (OIDC) against the repo's
-`pypi` environment — no tokens are stored.
 
 ## Cutting a release
 
@@ -40,10 +38,10 @@ installed version against PyPI and upgrades via pipx.
 
 ## Community installers (winget / scoop)
 
-- **scoop** — the bucket at <https://github.com/Vortrix5/scoop-bucket> uses
+- **scoop**: the bucket at <https://github.com/Vortrix5/scoop-bucket> uses
   `checkver` + `autoupdate`, so new releases are picked up automatically by
   `scoop update` / excavator. No per-release action needed.
-- **winget** — bump the manifests in [`packaging/winget/`](../packaging/winget/)
+- **winget**: bump the manifests in [`packaging/winget/`](../packaging/winget/)
   to the new version + SHA256 and submit with
   `wingetcreate update Vortrix5.Sifty --version <v> --urls <exe-url>` (it
   computes the hash and opens the winget-pkgs PR). Do this *after* the release,
@@ -56,17 +54,17 @@ installed version against PyPI and upgrades via pipx.
 remove it, sign the exe in the `windows-exe` job between the build and upload
 steps. Options, cheapest first:
 
-- **[SignPath](https://about.signpath.io/product/open-source)** — free
+- **[SignPath](https://about.signpath.io/product/open-source)**: free
   certificate + GitHub Action for OSS projects. Best fit here.
-- **[Azure Trusted Signing](https://learn.microsoft.com/azure/trusted-signing/)**
-  — ~$10/month, Microsoft-run, has an official GitHub Action.
-- An **EV code-signing certificate** — instant SmartScreen reputation, but
+- **[Azure Trusted Signing](https://learn.microsoft.com/azure/trusted-signing/)**:
+  ~$10/month, Microsoft-run, has an official GitHub Action.
+- An **EV code-signing certificate**: instant SmartScreen reputation, but
   pricey and needs a hardware/cloud HSM. OV certs are cheaper but still have to
   accrue reputation.
 
 Self-signing does **not** help with SmartScreen. Whichever you pick, the
 signing credential goes in a GitHub Actions secret and the signing step runs in
-CI — the release stays fully automated.
+CI, so the release stays fully automated.
 
 ## Manual build (local, for testing)
 
@@ -76,4 +74,12 @@ CI — the release stays fully automated.
 .\.venv\Scripts\python.exe -m twine check dist/*
 ```
 
-For a local exe build, run the `/package-exe` workflow (PyInstaller).
+For a local exe build, mirror what CI does (see `release.yml`):
+
+```powershell
+.\.venv\Scripts\python.exe -m pip install pyinstaller
+.\.venv\Scripts\pyinstaller.exe --onefile --name sifty --paths src --console `
+  --collect-submodules win32com --hidden-import win32timezone `
+  packaging/exe_entry.py
+.\dist\sifty.exe version     # smoke test
+```
