@@ -12,6 +12,8 @@ from textual.widgets import Button, DataTable, Input, Static
 
 from ...console import human_size
 from ...core import apps as apps_mod
+from ...core import history
+from ...core.leftovers import Leftover, clean_leftovers, find_leftovers
 from ...core.registry_scan import find_orphan_uninstall_entries
 from ..modals import ConfirmModal
 from ..widgets import Panel
@@ -249,3 +251,50 @@ class AppsView(BaseView):
         )
         self._marked.clear()
         self.load()
+        uninstalled = [n for n, ok, _m in results if ok]
+        if uninstalled:
+            self.scan_leftovers(uninstalled)
+
+    # --------------------------------------------------------------- leftovers
+    @work(thread=True, exclusive=True, group="apps-leftovers")
+    def scan_leftovers(self, names: list[str]) -> None:
+        """After an uninstall, look for what the uninstaller left behind."""
+        items: list[Leftover] = []
+        for name in names:
+            try:
+                items.extend(find_leftovers(name))
+            except Exception:
+                logger.exception("Leftover scan failed for %s", name)
+        if items:
+            self.app.call_from_thread(self._offer_leftovers, items)
+
+    @work
+    async def _offer_leftovers(self, items: list[Leftover]) -> None:
+        total = sum(i.size_bytes for i in items)
+        listing = "\n".join(f"  {i.path}" for i in items[:8])
+        if len(items) > 8:
+            listing += f"\n  …and {len(items) - 8} more"
+        ok = await self.app.push_screen_wait(
+            ConfirmModal(
+                f"The uninstaller left {len(items)} item(s) "
+                f"({human_size(total)}) behind:\n\n{listing}\n\n"
+                "Send them to the Recycle Bin?",
+                confirm_label="Clean leftovers",
+            )
+        )
+        if ok:
+            self.do_clean_leftovers(items)
+
+    @work(thread=True, exclusive=True, group="apps-leftovers")
+    def do_clean_leftovers(self, items: list[Leftover]) -> None:
+        result = clean_leftovers(items, dry_run=False)
+        history.record_clean(
+            "leftovers", f"{len(items)} items",
+            result.bytes_freed, result.items, result.trashed,
+        )
+        self.app.call_from_thread(
+            self.app.notify,
+            f"Sent {result.items} leftover item(s) "
+            f"({human_size(result.bytes_freed)}) to the Recycle Bin.",
+            title="Leftovers",
+        )

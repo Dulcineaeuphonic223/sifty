@@ -124,6 +124,67 @@ def uninstall_cmd(
     ok, message = apps.uninstall_app(name)
     if ok:
         success(message)
+        _report_leftovers(name)
     else:
         error(message)
         raise typer.Exit(1)
+
+
+def _report_leftovers(name: str) -> None:
+    """After an uninstall, tell the user what the uninstaller left behind."""
+    from ...core.leftovers import find_leftovers
+
+    with console.status("Scanning for leftovers…"):
+        items = find_leftovers(name)
+    if not items:
+        return
+    total = sum(i.size_bytes for i in items)
+    warn(f"{len(items)} leftover item(s) found ({human_size(total)}).")
+    console.print(f'[dim]Review and remove them with: [cyan]sifty apps leftovers "{name}"[/cyan][/dim]')
+
+
+@app.command("leftovers")
+def leftovers_cmd(
+    name: str = typer.Argument(..., help="App name to scan leftovers for (after uninstalling)."),
+    publisher: str = typer.Option("", "--publisher", help="Publisher name, to match Publisher\\App folders."),
+    apply: bool = typer.Option(False, "--apply", help="Move the leftovers to the Recycle Bin."),
+    yes: bool = typer.Option(False, "--yes", "-y", help="Skip the confirmation prompt."),
+) -> None:
+    """Find files an uninstaller left behind (AppData, ProgramData, Start Menu)."""
+    from ...core import history
+    from ...core.leftovers import clean_leftovers, find_leftovers
+
+    with console.status("Scanning for leftovers…") if not output.json_enabled() else _null():
+        items = find_leftovers(name, publisher)
+
+    if output.json_enabled():
+        output.emit([
+            {"path": str(i.path), "size_bytes": i.size_bytes, "kind": i.kind}
+            for i in items
+        ])
+        return
+
+    if not items:
+        success(f"No leftovers found for '{name}'.")
+        return
+
+    total = sum(i.size_bytes for i in items)
+    table = Table(title=f"Leftovers for '{name}' ({human_size(total)})")
+    table.add_column("Path")
+    table.add_column("Kind", style="dim")
+    table.add_column("Size", justify="right")
+    for i in items:
+        table.add_row(str(i.path), i.kind, human_size(i.size_bytes))
+    console.print(table)
+
+    if not apply:
+        console.print("[dim]Dry-run — re-run with --apply to move them to the Recycle Bin.[/dim]")
+        return
+    if not confirm(f"Move {len(items)} item(s) ({human_size(total)}) to the Recycle Bin?", assume_yes=yes):
+        warn("Cancelled.")
+        return
+    result = clean_leftovers(items, dry_run=False)
+    history.record_clean("leftovers", name, result.bytes_freed, result.items, result.trashed)
+    success(f"Sent {result.items} item(s) ({human_size(result.bytes_freed)}) to the Recycle Bin.")
+    if result.skipped:
+        warn(f"{len(result.skipped)} item(s) skipped (in use or protected).")
