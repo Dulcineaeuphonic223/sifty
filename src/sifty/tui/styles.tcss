@@ -107,26 +107,6 @@ Screen {
     margin-bottom: 1;
 }
 
-/* Home: two individual stat blocks per row. */
-.stat-row {
-    height: auto;
-}
-
-.stat-row > .panel {
-    width: 1fr;
-    margin: 0 1 1 0;
-}
-
-/* Home: stat cards are clickable (deep-link to their screen). */
-.stat-card {
-    border-subtitle-color: $text-muted;
-}
-
-.stat-card:hover {
-    border: round $accent;
-    border-title-color: $accent;
-}
-
 /* Home: checkup findings list. */
 #checkup-results {
     height: auto;

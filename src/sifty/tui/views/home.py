@@ -1,16 +1,16 @@
-"""Home dashboard: health checkup, volume gauges, and clickable stat cards.
+"""Home dashboard: the health checkup front and center, plus volume gauges.
 
-Stat summaries are cached on the app (``_home_cache``) so returning to Home
-shows the last values instantly instead of re-running every scan; the slow
-workers only re-fire when the cache is stale (or via Refresh). Each stat card
-deep-links to its screen on click. The checkup hero runs the read-only
-``core.checkup`` suite and renders findings with one-tap action buttons.
+The checkup hero runs the read-only ``core.checkup`` suite; each finding
+renders with an action button that **fixes it right here** where that is safe
+(clean junk, clean stale downloads, apply updates — each behind the usual
+confirm modal) and deep-links to the owning screen where a human should review
+first (registry orphans, disk space, startup). No duplicate stat cards: the
+sidebar already covers per-domain detail.
 """
 
 from __future__ import annotations
 
 import logging
-import time
 
 from rich.text import Text
 from textual import work
@@ -19,35 +19,26 @@ from textual.containers import Horizontal, Vertical
 from textual.widgets import Button, Static
 
 from ...console import human_size
-from ...core import apps as apps_mod
-from ...core import checkup, disk, history, junk, services, startup, updates
+from ...core import checkup, cleanup, disk, history, junk, updates
 from ...core.checkup import Finding
-from ...windows import winget
 from ...windows.admin import is_admin
+from ..modals import ConfirmModal
 from ..widgets import Panel, usage_gauge
 from .base import BaseView
 
 logger = logging.getLogger("sifty.tui")
 
-_CACHE_TTL = 300.0  # seconds before a cached stat is considered stale
-
 _SEVERITY_DOT = {"ok": "[green]●[/green]", "info": "[yellow]●[/yellow]",
                  "attention": "[red]●[/red]"}
 
-
-class StatCard(Panel):
-    """A stat panel that deep-links to its screen when clicked."""
-
-    def __init__(self, *children, title: str = "", nav_key: str = "", **kwargs) -> None:
-        super().__init__(*children, title=title, **kwargs)
-        self.add_class("stat-card")
-        self._nav_key = nav_key
-        if nav_key:
-            self.border_subtitle = "open ▸"
-
-    async def on_click(self) -> None:
-        if self._nav_key:
-            await self.app.show(self._nav_key)
+# Domains whose finding can be fixed directly from Home (behind a confirm).
+# Everything else navigates to its screen for review via the finding's
+# action_key.
+_DIRECT_FIX_LABELS = {
+    "junk": "Clean junk…",
+    "stale": "Clean downloads…",
+    "updates": "Update all…",
+}
 
 
 class HomeView(BaseView):
@@ -64,62 +55,35 @@ class HomeView(BaseView):
             )
         with Panel(title="Health checkup", id="checkup-panel"):
             yield Static(
-                "Scan everything at once: junk, updates, registry orphans, stale "
-                "downloads, disk space and startup. Read-only — nothing is changed.",
+                "Scan everything at once — junk, updates, registry orphans, stale "
+                "downloads, disk space, startup — then fix it from right here.",
                 classes="subtle",
             )
             with Horizontal(classes="actions"):
                 yield Button("Run checkup", id="run-checkup", variant="primary")
-                yield Button("Refresh stats", id="refresh-stats")
             yield Vertical(id="checkup-results")
         yield Panel(Static("Reading volumes…", id="vol-body"), title="Volumes")
-        with Horizontal(classes="stat-row"):
-            yield StatCard(Static("…", id="junk-summary"), title="Junk", nav_key="junk")
-            yield StatCard(Static("checking…", id="updates-summary"), title="Updates", nav_key="updates")
-        with Horizontal(classes="stat-row"):
-            yield StatCard(Static("…", id="apps-summary"), title="Apps", nav_key="apps")
-            yield StatCard(Static("…", id="startup-summary"), title="Startup", nav_key="startup")
-        with Horizontal(classes="stat-row"):
-            yield StatCard(Static("…", id="services-summary"), title="Services", nav_key="services")
-            yield StatCard(Static("…", id="history-summary"), title="History", nav_key="reports")
 
     def on_mount(self) -> None:
+        self._findings: dict[str, Finding] = {}
         self._render_volumes()  # fast (psutil), no worker needed
-        self._set("history-summary", self._history_text())  # fast (sqlite)
-        self._load_stats()
-
-    def _load_stats(self, force: bool = False) -> None:
-        """Show cached summaries; only re-scan the ones that are stale."""
-        loaders = {
-            "junk-summary": self.compute_junk,
-            "apps-summary": self.compute_apps,
-            "startup-summary": self.compute_startup,
-            "services-summary": self.compute_services,
-            "updates-summary": self.compute_updates,
-        }
-        cache = self._cache()
-        now = time.monotonic()
-        for wid, loader in loaders.items():
-            cached = cache.get(wid)
-            if cached is not None:
-                self._set(wid, cached[0])
-            stale = force or cached is None or now - cached[1] > _CACHE_TTL
-            if stale and self.workers_enabled():
-                loader()
 
     async def on_button_pressed(self, event: Button.Pressed) -> None:
         bid = event.button.id or ""
         if bid == "run-checkup":
             event.button.disabled = True
-            await self.query_one("#checkup-results", Vertical).remove_children()
-            await self.query_one("#checkup-results", Vertical).mount(
-                Static("[dim]Running checkup…[/dim]", classes="subtle")
-            )
+            results = self.query_one("#checkup-results", Vertical)
+            await results.remove_children()
+            await results.mount(Static("[dim]Running checkup…[/dim]", classes="subtle"))
             self.run_checkup_worker()
-        elif bid == "refresh-stats":
-            self._load_stats(force=True)
         elif bid.startswith("fix-"):
-            await self.app.show(bid.removeprefix("fix-"))
+            domain = bid.removeprefix("fix-")
+            if domain in _DIRECT_FIX_LABELS:
+                self._fix_flow(domain)
+            else:
+                finding = self._findings.get(domain)
+                if finding is not None and finding.action_key:
+                    await self.app.show(finding.action_key)
 
     # ----------------------------------------------------------------- checkup
     @work(thread=True, exclusive=True, group="home-checkup")
@@ -137,38 +101,93 @@ class HomeView(BaseView):
             results = self.query_one("#checkup-results", Vertical)
         except Exception:
             return  # view was navigated away mid-scan
+        self._findings = {f.domain: f for f in findings}
         await results.remove_children()
         if not findings:
             await results.mount(Static("Checkup failed — see `sifty logs`.", classes="subtle"))
             return
         for f in findings:
             dot = _SEVERITY_DOT.get(f.severity, "")
-            row = Horizontal(classes="finding-row")
+            row = Horizontal(classes="finding-row", id=f"finding-{f.domain}")
             await results.mount(row)
-            await row.mount(Static(f"{dot} [b]{f.label}[/b] — {f.summary}", classes="finding-text"))
-            if f.action_label and f.action_key:
-                await row.mount(Button(f.action_label, id=f"fix-{f.action_key}", classes="fix"))
+            await row.mount(
+                Static(f"{dot} [b]{f.label}[/b] — {f.summary}", classes="finding-text")
+            )
+            if f.severity != "ok" and f.action_key:
+                label = _DIRECT_FIX_LABELS.get(f.domain, f.action_label or "Review…")
+                await row.mount(Button(label, id=f"fix-{f.domain}", classes="fix"))
         issues = sum(1 for f in findings if f.severity != "ok")
         verdict = (f"[b]{issues}[/b] item(s) worth a look." if issues
                    else "[green]All clear — nothing needs attention.[/green]")
         await results.mount(Static(verdict, classes="status"))
 
-    # ----------------------------------------------------------------- render
-    def _cache(self) -> dict:
-        cache = getattr(self.app, "_home_cache", None)
-        if cache is None:
-            cache = {}
-            self.app._home_cache = cache
-        return cache
+    # -------------------------------------------------------------- direct fix
+    @work
+    async def _fix_flow(self, domain: str) -> None:
+        finding = self._findings.get(domain)
+        summary = finding.summary if finding else ""
+        prompts = {
+            "junk": f"Move all junk ({summary}) to the Recycle Bin?",
+            "stale": f"Send the stale Downloads items ({summary}) to the Recycle Bin?",
+            "updates": f"Upgrade everything via winget ({summary})? This can take a while.",
+        }
+        ok = await self.app.push_screen_wait(
+            ConfirmModal(prompts[domain], confirm_label="Proceed")
+        )
+        if not ok:
+            return
+        self._set_row(domain, "[dim]working…[/dim]", drop_button=True)
+        self.run_fix(domain)
 
-    def _set(self, widget_id: str, text, *, remember: bool = False) -> None:
+    @work(thread=True, group="home-fix")
+    def run_fix(self, domain: str) -> None:
         try:
-            self.query_one(f"#{widget_id}", Static).update(text)
-        except Exception:
-            pass
-        if remember:
-            self._cache()[widget_id] = (text, time.monotonic())
+            if domain == "junk":
+                result = junk.clean(dry_run=False)
+                for reason in result.skipped:
+                    logger.warning("checkup junk clean skipped: %s", reason)
+                history.record_clean("junk", "checkup", result.bytes_freed,
+                                     result.items, result.trashed)
+                outcome = (f"[green]✓[/green] sent {result.items:,} items "
+                           f"({human_size(result.bytes_freed)}) to the Recycle Bin")
+                if result.skipped:
+                    outcome += f" · {len(result.skipped)} skipped (in use / need admin)"
+            elif domain == "stale":
+                stale = cleanup.find_stale_downloads()
+                result = cleanup.trash_paths([p for p, _s, _m in stale], dry_run=False)
+                history.record_clean("cleanup-stale", "checkup", result.bytes_freed,
+                                     result.items, result.trashed)
+                outcome = (f"[green]✓[/green] sent {result.items:,} items "
+                           f"({human_size(result.bytes_freed)}) to the Recycle Bin")
+            elif domain == "updates":
+                code = updates.apply_upgrades()
+                outcome = ("[green]✓[/green] winget upgrade finished"
+                           if code == 0 else f"[yellow]⚠[/yellow] winget exited with code {code}")
+            else:  # pragma: no cover - guarded by _DIRECT_FIX_LABELS
+                return
+        except Exception as exc:
+            logger.exception("Home: fix %s failed", domain)
+            outcome = f"[red]✗ failed:[/red] {exc}"
+        self.app.call_from_thread(self._fix_done, domain, outcome)
 
+    def _set_row(self, domain: str, suffix: str, *, drop_button: bool = False) -> None:
+        finding = self._findings.get(domain)
+        label = finding.label if finding else domain
+        try:
+            row = self.query_one(f"#finding-{domain}", Horizontal)
+        except Exception:
+            return  # navigated away
+        row.query_one(".finding-text", Static).update(f"[b]{label}[/b] — {suffix}")
+        if drop_button:
+            for btn in row.query(Button):
+                btn.remove()
+
+    def _fix_done(self, domain: str, outcome: str) -> None:
+        self._set_row(domain, outcome, drop_button=True)
+        finding = self._findings.get(domain)
+        self.app.notify(f"{finding.label if finding else domain}: done.", title="Checkup")
+
+    # ----------------------------------------------------------------- volumes
     def _render_volumes(self) -> None:
         text = Text()
         for i, v in enumerate(disk.volumes()):
@@ -180,80 +199,4 @@ class HomeView(BaseView):
                 style="bold",
             )
             text.append(usage_gauge(v.percent))
-        self._set("vol-body", text)
-
-    def _history_text(self) -> str:
-        try:
-            summ = history.summary()
-        except Exception:
-            return "no history yet"
-        if not summ["runs"]:
-            return "nothing cleaned yet"
-        return f"reclaimed [b]{human_size(summ['bytes_freed'])}[/b] over {summ['runs']} runs"
-
-    # ----------------------------------------------------------------- workers
-    @work(thread=True, exclusive=True, group="home-junk")
-    def compute_junk(self) -> None:
-        try:
-            total = sum(cat.size for cat in junk.scan())
-        except Exception:
-            logger.exception("Home: junk total scan failed")
-            return
-        self.app.call_from_thread(
-            self._set, "junk-summary", f"[b]{human_size(total)}[/b] reclaimable", remember=True
-        )
-
-    @work(thread=True, exclusive=True, group="home-apps")
-    def compute_apps(self) -> None:
-        try:
-            installed = apps_mod.installed_apps()
-        except Exception:
-            logger.exception("Home: apps summary failed")
-            return
-        if installed:
-            largest = max(installed, key=lambda a: a.size_bytes)
-            value = (f"[b]{len(installed)}[/b] installed\nlargest: {largest.name} "
-                     f"({human_size(largest.size_bytes)})")
-        else:
-            value = "none found"
-        self.app.call_from_thread(self._set, "apps-summary", value, remember=True)
-
-    @work(thread=True, exclusive=True, group="home-startup")
-    def compute_startup(self) -> None:
-        try:
-            entries = startup.list_entries()
-        except Exception:
-            logger.exception("Home: startup summary failed")
-            return
-        enabled = sum(1 for e in entries if e.enabled)
-        self.app.call_from_thread(
-            self._set, "startup-summary",
-            f"[b]{len(entries)}[/b] programs · {enabled} enabled", remember=True,
-        )
-
-    @work(thread=True, exclusive=True, group="home-services")
-    def compute_services(self) -> None:
-        try:
-            items = services.list_services()
-        except Exception:
-            logger.exception("Home: services summary failed")
-            return
-        present = sum(1 for s in items if s.present)
-        disabled = sum(1 for s in items if s.start_type == "disabled")
-        self.app.call_from_thread(
-            self._set, "services-summary",
-            f"[b]{present}[/b] optional · {disabled} disabled", remember=True,
-        )
-
-    @work(thread=True, exclusive=True, group="home-updates")
-    def compute_updates(self) -> None:
-        try:
-            if not winget.available():
-                value = "winget unavailable"
-            else:
-                ups = updates.list_upgrades()
-                value = f"[b]{len(ups)}[/b] available" if ups else "up to date"
-        except Exception:
-            logger.exception("Home: updates summary failed")
-            return
-        self.app.call_from_thread(self._set, "updates-summary", value, remember=True)
+        self.query_one("#vol-body", Static).update(text)

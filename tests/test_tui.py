@@ -59,14 +59,13 @@ def test_command_palette_entries_cover_sections_and_admin():
     assert len(entries) == len(SECTIONS) + len(SUBVIEW_LABELS) + 1
 
 
-async def test_home_has_individual_stat_blocks():
+async def test_home_is_slim_no_stat_cards():
     async with _make_app().run_test() as pilot:
         await pilot.pause()
-        # One bordered block per area, each with its own content widget.
-        for wid in ("junk-summary", "updates-summary", "apps-summary",
-                    "startup-summary", "services-summary", "history-summary"):
-            block = pilot.app.screen.query_one(f"#{wid}", Static)
-            assert block.region.height > 0  # actually rendered (not collapsed)
+        # The redundant per-domain stat cards are gone — Home is checkup + volumes.
+        assert not pilot.app.query(".stat-card")
+        assert pilot.app.screen.query_one("#run-checkup", Button)
+        assert pilot.app.screen.query_one("#vol-body", Static)
 
 
 async def test_home_checkup_renders_findings_with_action_buttons():
@@ -85,9 +84,10 @@ async def test_home_checkup_renders_findings_with_action_buttons():
         fix_buttons = pilot.app.query(".fix")
         assert len(fix_buttons) == 1
         assert fix_buttons[0].id == "fix-junk"
+        assert str(fix_buttons[0].label) == "Clean junk…"  # direct fix, not a deep link
 
 
-async def test_home_checkup_action_button_deep_links():
+async def test_home_checkup_direct_fix_opens_confirm():
     from sifty.core.checkup import Finding
 
     async with _make_app().run_test() as pilot:
@@ -100,30 +100,28 @@ async def test_home_checkup_action_button_deep_links():
         await pilot.click("#fix-junk")
         await pilot.pause()
         await pilot.pause()
-        assert pilot.app.query(JunkView)  # navigated into the Clean group's Junk tab
+        # Direct fixes never run without the usual confirmation.
+        assert isinstance(pilot.app.screen, ConfirmModal)
+        await pilot.press("escape")
+        await pilot.pause()
+        assert not isinstance(pilot.app.screen, ConfirmModal)
 
 
-async def test_home_stat_cards_are_clickable():
-    from sifty.tui.views.home import StatCard
+async def test_home_checkup_review_button_navigates():
+    from sifty.core.checkup import Finding
 
     async with _make_app().run_test() as pilot:
         await pilot.pause()
-        cards = pilot.app.query(StatCard)
-        assert len(cards) == 6
-        nav_keys = {c._nav_key for c in cards}
-        assert nav_keys == {"junk", "updates", "apps", "startup", "services", "reports"}
-
-
-async def test_home_stats_use_cache_on_remount():
-    import time as _time
-
-    async with _make_app().run_test() as pilot:
+        view = pilot.app.query_one(HomeView)
+        await view._show_findings(
+            [Finding("startup", "Startup programs", "23 programs", "info",
+                     "startup", "Review startup")]
+        )
         await pilot.pause()
-        pilot.app._home_cache = {"junk-summary": ("[b]42 B[/b] reclaimable", _time.monotonic())}
-        await pilot.app.show("home")  # remount
+        await pilot.click("#fix-startup")
         await pilot.pause()
-        block = pilot.app.screen.query_one("#junk-summary", Static)
-        assert "42" in str(block.render())
+        await pilot.pause()
+        assert pilot.app.query(StartupView)  # review domains deep-link, not fix
 
 
 async def test_command_palette_registered():
