@@ -1,0 +1,369 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Sifty · sift the junk from the keep</title>
+  <meta name="description" content="An open source Windows maintenance CLI and TUI. Cleans junk, finds duplicates, manages apps and updates, purges dev clutter. Dry-run by default, Recycle Bin only, with undo.">
+  <link rel="canonical" href="https://vortrix5.github.io/sifty/">
+  <link rel="icon" type="image/png" href="assets/logo.png">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Sifty · sift the junk from the keep">
+  <meta property="og:description" content="Open source Windows cleanup in your terminal. Dry-run by default, Recycle Bin only, undo included. Optional AI that runs locally and never touches your files.">
+  <meta property="og:url" content="https://vortrix5.github.io/sifty/">
+  <meta property="og:image" content="https://vortrix5.github.io/sifty/assets/social-preview.png">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header class="nav">
+  <a class="nav-brand" href="#top">
+    <img src="assets/logo.png" alt="Sifty logo" width="28" height="28">
+    <span>sifty</span>
+  </a>
+  <nav class="nav-links" aria-label="Page sections">
+    <a href="#features">Features</a>
+    <a href="#demo">Demo</a>
+    <a href="#safety">Safety</a>
+    <a href="#tui">TUI</a>
+    <a href="#install">Install</a>
+    <a class="nav-gh" href="https://github.com/Vortrix5/sifty" rel="noopener">
+      <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path fill="currentColor" d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27s1.36.09 2 .27c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8z"/></svg>
+      <span>GitHub</span>
+    </a>
+  </nav>
+</header>
+
+<main id="top">
+
+  <!-- ====================== HERO ====================== -->
+  <section class="hero">
+    <div class="hero-copy">
+      <h1 class="wordmark">sifty<span class="caret" aria-hidden="true"></span></h1>
+      <p class="tagline">sift the junk from the keep</p>
+      <p class="lede">
+        Open source Windows cleanup that lives in your terminal.
+        Junk, duplicates, apps, updates, dev clutter.
+        Previews first. Recycle Bin always. Undo built in.
+      </p>
+      <div class="install-pill">
+        <code>pipx install sifty</code>
+        <button class="copy-btn" data-copy="pipx install sifty" aria-label="Copy install command">copy</button>
+      </div>
+      <div class="hero-actions">
+        <a class="btn btn-primary" href="https://github.com/Vortrix5/sifty/releases/latest" rel="noopener">Download sifty.exe</a>
+        <a class="btn btn-ghost" href="https://github.com/Vortrix5/sifty" rel="noopener">Star on GitHub</a>
+      </div>
+      <p class="hero-fine">Windows 10/11 · Python 3.11+ or standalone exe · MIT</p>
+    </div>
+
+    <div class="hero-term">
+      <div class="term" aria-label="Terminal demo of sifty cleaning junk and undoing it">
+        <div class="term-bar">
+          <span class="term-title">sifty @ PowerShell</span>
+          <span class="term-controls" aria-hidden="true"><i>&#x2500;</i><i>&#x25A2;</i><i>&#x2715;</i></span>
+        </div>
+        <div class="term-body" id="heroTerm">
+          <!-- Static transcript (replaced by the typed animation when JS runs) -->
+          <div><span class="c-p">PS C:\&gt;</span> sifty junk scan</div>
+          <pre class="t-out">                                    <span class="c-d t-i">Junk scan</span>
+<span class="c-d">┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━┳━━━━━━━━━━┓</span>
+<span class="c-d">┃</span> <span class="c-b">Category                          </span> <span class="c-d">┃</span> <span class="c-b">Key                 </span> <span class="c-d">┃</span> <span class="c-b"> Files</span> <span class="c-d">┃</span> <span class="c-b">    Size</span> <span class="c-d">┃</span>
+<span class="c-d">┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━╇━━━━━━━━━━┩</span>
+<span class="c-d">│</span> User temp files                    <span class="c-d">│ user-temp            │</span> 12,136 <span class="c-d">│</span> 537.0 MB <span class="c-d">│</span>
+<span class="c-d">│</span> Windows temp files <span class="c-y">(admin)</span>         <span class="c-d">│ windows-temp         │</span>      0 <span class="c-d">│</span>      0 B <span class="c-d">│</span>
+<span class="c-d">│</span> Thumbnail &amp; icon cache             <span class="c-d">│ thumbnail-cache      │</span>     30 <span class="c-d">│</span>  13.1 MB <span class="c-d">│</span>
+<span class="c-d">│</span> Browser caches                     <span class="c-d">│ browser-cache        │</span> 15,366 <span class="c-d">│</span>   1.2 GB <span class="c-d">│</span>
+<span class="c-d">│</span> Windows Update cache <span class="c-y">(admin)</span>       <span class="c-d">│ windows-update-cache │</span>      0 <span class="c-d">│</span>      0 B <span class="c-d">│</span>
+<span class="c-d">│</span> WinGet download cache              <span class="c-d">│ winget-cache         │</span>     72 <span class="c-d">│</span> 189.2 KB <span class="c-d">│</span>
+<span class="c-d">│</span> Archived event logs <span class="c-y">(admin)</span>        <span class="c-d">│ event-log-archives   │</span>      0 <span class="c-d">│</span>      0 B <span class="c-d">│</span>
+<span class="c-d">│</span> Defender detection history <span class="c-y">(admin)</span> <span class="c-d">│ defender-history     │</span>      0 <span class="c-d">│</span>      0 B <span class="c-d">│</span>
+<span class="c-d">│</span> OneDrive sync logs                 <span class="c-d">│ onedrive-logs        │</span>    199 <span class="c-d">│</span>  83.1 MB <span class="c-d">│</span>
+<span class="c-d">│</span> App crash dumps                    <span class="c-d">│ crash-dumps          │</span>      0 <span class="c-d">│</span>      0 B <span class="c-d">│</span>
+<span class="c-d">│</span> System crash reports <span class="c-y">(admin)</span>       <span class="c-d">│ system-crash-reports │</span>      0 <span class="c-d">│</span>      0 B <span class="c-d">│</span>
+<span class="c-d">├────────────────────────────────────┼──────────────────────┼────────┼──────────┤</span>
+<span class="c-d">│</span> <span class="c-b">Total reclaimable                 </span> <span class="c-d">│                      │</span>        <span class="c-d">│</span> <span class="c-b">  1.8 GB</span> <span class="c-d">│</span>
+<span class="c-d">└────────────────────────────────────┴──────────────────────┴────────┴──────────┘</span>
+
+Run <span class="c-cy">sifty junk clean</span> to preview removal (dry-run by default).</pre>
+          <div><span class="c-p">PS C:\&gt;</span> sifty junk clean --apply</div>
+          <pre class="t-out">Found <span class="c-b">27,803</span> items totalling <span class="c-b">1.8 GB</span>.
+Move 27,803 items (1.8 GB) to the Recycle Bin? [y/N]: y
+<span class="c-g">✓</span> Sent 27,803 items (1.8 GB) to the Recycle Bin.
+<span class="c-y">!</span> 41 item(s) skipped (in use or protected).</pre>
+          <div><span class="c-p">PS C:\&gt;</span> sifty undo</div>
+          <pre class="t-out">Restore 27762 item(s) from the junk clean at 2026-06-12 14:21:45? [y/N]: y
+<span class="c-g">✓</span> Restored 27762 item(s).</pre>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ====================== FEATURES ====================== -->
+  <section id="features" class="section reveal">
+    <h2>what it sifts</h2>
+    <div class="grid grid-3">
+      <article class="card">
+        <h3 class="card-cmd">$ sifty checkup</h3>
+        <p>One read-only scan of everything. Nothing gets touched.</p>
+      </article>
+      <article class="card">
+        <h3 class="card-cmd">$ sifty junk</h3>
+        <p>Temp files, browser caches, crash dumps. 11+ categories.</p>
+      </article>
+      <article class="card">
+        <h3 class="card-cmd">$ sifty disk</h3>
+        <p>Volume gauges, biggest files, NTFS-aware duplicate finder.</p>
+      </article>
+      <article class="card">
+        <h3 class="card-cmd">$ sifty apps</h3>
+        <p>Uninstall via winget, then catch what the uninstaller forgot.</p>
+      </article>
+      <article class="card">
+        <h3 class="card-cmd">$ sifty purge</h3>
+        <p>node_modules, __pycache__, orphaned worktrees, WSL2 disks.</p>
+      </article>
+      <article class="card">
+        <h3 class="card-cmd">$ sifty startup</h3>
+        <p>Boot bloat and safe-to-disable services. All reversible.</p>
+      </article>
+    </div>
+  </section>
+
+  <!-- ====================== DEMO TABS ====================== -->
+  <section id="demo" class="section reveal">
+    <h2>see it run</h2>
+    <p class="section-sub">Straight from the terminal. Pick a tab.</p>
+
+    <div class="tabs" role="tablist" aria-label="Command demos">
+      <button class="tab is-active" role="tab" aria-selected="true" data-tab="disk">Disk</button>
+      <button class="tab" role="tab" aria-selected="false" data-tab="safety">Safety</button>
+      <button class="tab" role="tab" aria-selected="false" data-tab="scripting">Scripting</button>
+    </div>
+
+    <div class="term term-wide">
+      <div class="term-bar">
+        <span class="term-title">sifty @ PowerShell</span>
+        <span class="term-controls" aria-hidden="true"><i>&#x2500;</i><i>&#x25A2;</i><i>&#x2715;</i></span>
+      </div>
+
+      <div class="term-body" data-panel="disk">
+        <div><span class="c-p">PS C:\&gt;</span> sifty disk volumes</div>
+        <pre class="t-out">                         <span class="c-d t-i">Volumes</span>
+<span class="c-d">┏━━━━━━━┳━━━━━━┳━━━━━━━━━━┳━━━━━━━━━┳━━━━━━━━━━┳━━━━━━━━┓</span>
+<span class="c-d">┃</span> <span class="c-b">Drive</span> <span class="c-d">┃</span> <span class="c-b">FS  </span> <span class="c-d">┃</span> <span class="c-b">    Used</span> <span class="c-d">┃</span> <span class="c-b">   Free</span> <span class="c-d">┃</span> <span class="c-b">   Total</span> <span class="c-d">┃</span> <span class="c-b">Used %</span> <span class="c-d">┃</span>
+<span class="c-d">┡━━━━━━━╇━━━━━━╇━━━━━━━━━━╇━━━━━━━━━╇━━━━━━━━━━╇━━━━━━━━┩</span>
+<span class="c-d">│</span> C:\   <span class="c-d">│ NTFS │</span> 177.4 GB <span class="c-d">│</span> 44.7 GB <span class="c-d">│</span> 222.0 GB <span class="c-d">│</span> <span class="c-y">   80%</span> <span class="c-d">│</span>
+<span class="c-d">│</span> E:\   <span class="c-d">│ NTFS │</span> 847.6 GB <span class="c-d">│</span> 83.9 GB <span class="c-d">│</span> 931.5 GB <span class="c-d">│</span> <span class="c-r">   91%</span> <span class="c-d">│</span>
+<span class="c-d">└───────┴──────┴──────────┴─────────┴──────────┴────────┘</span></pre>
+        <div><span class="c-p">PS C:\&gt;</span> sifty disk duplicates D:\Photos</div>
+        <pre class="t-out">Found <span class="c-b">316</span> duplicate groups.
+
+<span class="c-b">Reclaimable by de-duplicating: 6.4 GB</span></pre>
+      </div>
+
+      <div class="term-body" data-panel="safety" hidden>
+        <div><span class="c-p">PS C:\&gt;</span> sifty junk clean --apply</div>
+        <pre class="t-out">Found <span class="c-b">27,803</span> items totalling <span class="c-b">1.8 GB</span>.
+Move 27,803 items (1.8 GB) to the Recycle Bin? [y/N]: y
+<span class="c-g">✓</span> Sent 27,803 items (1.8 GB) to the Recycle Bin.</pre>
+        <div><span class="c-p">PS C:\&gt;</span> Get-Content $env:APPDATA\sifty\audit.log -Tail 2</div>
+        <pre class="t-out"><span class="c-d">2026-06-12T13:21:45+00:00</span> TRASH C:\Users\amine\AppData\Local\Temp\wct8A3.tmp
+<span class="c-d">2026-06-12T13:21:45+00:00</span> TRASH C:\Users\amine\AppData\Local\...\thumbcache_96.db</pre>
+        <div><span class="c-p">PS C:\&gt;</span> sifty undo</div>
+        <pre class="t-out">Restore 27762 item(s) from the junk clean at 2026-06-12 14:21:45? [y/N]: y
+<span class="c-g">✓</span> Restored 27762 item(s).</pre>
+        <p class="panel-note">Protected paths like <code>C:\Windows</code> are refused outright. There is no <code>--force</code> flag.</p>
+      </div>
+
+      <div class="term-body" data-panel="scripting" hidden>
+        <div><span class="c-p">PS C:\&gt;</span> sifty junk scan | jq '[.[].size_bytes] | add'</div>
+        <pre class="t-out">1940603039</pre>
+        <div><span class="c-p">PS C:\&gt;</span> sifty disk volumes | jq '.[] | {drive, percent}'</div>
+        <pre class="t-out">{
+  "drive": "C:\\",
+  "percent": 79.9
+}
+{
+  "drive": "E:\\",
+  "percent": 91
+}</pre>
+        <p class="panel-note">Read-only commands emit JSON when piped, or with <code>--json</code>.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ====================== SAFETY ====================== -->
+  <section id="safety" class="section reveal">
+    <h2>hard to misuse, on purpose</h2>
+    <p class="section-sub">Most cleaners ask for your trust. Sifty is built so it doesn't need much.</p>
+    <div class="grid grid-4">
+      <article class="card card-num">
+        <span class="num">01</span>
+        <h3>Dry-run by default</h3>
+        <p>Nothing changes without an explicit <code>--apply</code>, then a confirm.</p>
+      </article>
+      <article class="card card-num">
+        <span class="num">02</span>
+        <h3>Recycle Bin, always</h3>
+        <p>Permanent delete is not a code path. <code>sifty undo</code> restores.</p>
+      </article>
+      <article class="card card-num">
+        <span class="num">03</span>
+        <h3>Protected paths</h3>
+        <p>Windows, Program Files, your profile root. Refused. No override exists.</p>
+      </article>
+      <article class="card card-num">
+        <span class="num">04</span>
+        <h3>Audit log</h3>
+        <p>Every applied deletion is logged with a timestamp. Receipts.</p>
+      </article>
+    </div>
+
+    <div class="code-proof">
+      <div class="code-proof-text">
+        <h3>The only place Sifty can delete anything</h3>
+        <p>
+          Every removal funnels through this one function, and CI fails if a stray
+          <code>os.remove</code> sneaks in anywhere else. Don't take our word for it, it's nine lines.
+        </p>
+        <a class="btn btn-ghost" href="https://github.com/Vortrix5/sifty/blob/main/src/sifty/core/safety.py" rel="noopener">Read safety.py on GitHub</a>
+      </div>
+      <pre class="code-block"><span class="c-mag">def</span> <span class="c-cy">trash</span>(path, allow_subtrees=(), extra_protected=(), *, dry_run=<span class="c-g">True</span>):
+    <span class="c-d">"""Send path to the Recycle Bin after a safety check."""</span>
+    assert_safe(path, allow_subtrees, extra_protected)
+    <span class="c-mag">if</span> dry_run:
+        <span class="c-mag">return</span> <span class="c-g">True</span>
+    send_to_trash(path)   <span class="c-d"># Recycle Bin, never permanent</span>
+    audit(<span class="c-y">f"TRASH {path}"</span>)
+    <span class="c-mag">return</span> <span class="c-g">True</span></pre>
+    </div>
+  </section>
+
+  <!-- ====================== TUI ====================== -->
+  <section id="tui" class="section reveal">
+    <h2>prefer buttons? sifty tui</h2>
+    <p class="section-sub">The same engine, full screen.</p>
+    <div class="tui-wrap">
+      <div class="term">
+        <div class="term-bar">
+          <span class="term-title">sifty tui</span>
+          <span class="term-controls" aria-hidden="true"><i>&#x2500;</i><i>&#x25A2;</i><i>&#x2715;</i></span>
+        </div>
+        <img class="tui-gif" src="assets/demo.gif" alt="The Sifty TUI scanning junk and cleaning it from a full-screen terminal app" loading="lazy" width="938" height="688">
+      </div>
+      <ul class="tui-points">
+        <li>Seven screens: Home, Clean, Disk, Apps, Monitor, Reports, AI</li>
+        <li><kbd>Ctrl+P</kbd> palette, <kbd>F2</kbd> to elevate, <kbd>Space</kbd> to bulk-select</li>
+        <li>Checkup findings come with one-button fixes</li>
+        <li>Reports tracks space reclaimed, undo included</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- ====================== AI ====================== -->
+  <section id="ai" class="section reveal">
+    <h2>ai that can look, not touch</h2>
+    <p class="section-sub">Optional, and unusually boring about your privacy.</p>
+    <div class="ai-row">
+      <div>
+        <h3>Runs on your machine</h3>
+        <p><a href="https://ollama.com" rel="noopener">Ollama</a> over local HTTP. Nothing leaves your computer.</p>
+      </div>
+      <div>
+        <h3>Sees metadata only</h3>
+        <p>Names, sizes and paths. Never file contents.</p>
+      </div>
+      <div>
+        <h3>Can't delete anything</h3>
+        <p>It proposes. You click Run or Skip.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ====================== INSTALL ====================== -->
+  <section id="install" class="section reveal">
+    <h2>get sifty</h2>
+    <div class="grid grid-2 install-grid">
+      <article class="card install-card">
+        <h3>pipx <span class="badge">recommended</span></h3>
+        <div class="cmd-line"><code>pipx install sifty</code><button class="copy-btn" data-copy="pipx install sifty" aria-label="Copy pipx command">copy</button></div>
+        <p>Isolated, and easy to update later with <code>sifty selfupdate</code>.</p>
+      </article>
+      <article class="card install-card">
+        <h3>Standalone exe</h3>
+        <div class="cmd-line"><a class="btn btn-primary btn-small" href="https://github.com/Vortrix5/sifty/releases/latest" rel="noopener">Download sifty.exe</a></div>
+        <p>No Python needed. One file from the latest release.</p>
+      </article>
+      <article class="card install-card">
+        <h3>Scoop</h3>
+        <div class="cmd-line"><code>scoop bucket add sifty https://github.com/Vortrix5/scoop-bucket</code><button class="copy-btn" data-copy="scoop bucket add sifty https://github.com/Vortrix5/scoop-bucket; scoop install sifty" aria-label="Copy scoop commands">copy</button></div>
+        <div class="cmd-line"><code>scoop install sifty</code></div>
+        <p>The copy button grabs both lines.</p>
+      </article>
+      <article class="card install-card">
+        <h3>winget</h3>
+        <div class="cmd-line"><code>winget install Vortrix5.Sifty</code><button class="copy-btn" data-copy="winget install Vortrix5.Sifty" aria-label="Copy winget command">copy</button></div>
+        <p>Fresh submission, may still be rolling out.</p>
+      </article>
+    </div>
+    <p class="section-foot">First run: <code>sifty doctor</code>, then <code>sifty checkup</code>. Both read-only.</p>
+  </section>
+
+</main>
+
+<footer class="footer">
+  <div class="footer-inner">
+    <div class="footer-brand">
+      <img src="assets/logo.png" alt="" width="22" height="22">
+      <span>sifty · MIT licensed · © 2026 Amine Zouaoui</span>
+    </div>
+    <nav class="footer-links" aria-label="Project links">
+      <a href="https://github.com/Vortrix5/sifty" rel="noopener">GitHub</a>
+      <a href="https://pypi.org/project/sifty/" rel="noopener">PyPI</a>
+      <a href="https://github.com/Vortrix5/sifty/blob/main/CHANGELOG.md" rel="noopener">Changelog</a>
+      <a href="https://github.com/Vortrix5/sifty/blob/main/SECURITY.md" rel="noopener">Security</a>
+      <a href="https://github.com/Vortrix5/sifty/blob/main/docs/ARCHITECTURE.md" rel="noopener">Architecture</a>
+    </nav>
+  </div>
+</footer>
+
+<!-- Animation script for the hero terminal -->
+<template id="heroScript">
+  <div data-kind="cmd">sifty junk scan</div>
+  <div data-kind="out"><pre class="t-out">                                    <span class="c-d t-i">Junk scan</span>
+<span class="c-d">┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━┳━━━━━━━━━━┓</span>
+<span class="c-d">┃</span> <span class="c-b">Category                          </span> <span class="c-d">┃</span> <span class="c-b">Key                 </span> <span class="c-d">┃</span> <span class="c-b"> Files</span> <span class="c-d">┃</span> <span class="c-b">    Size</span> <span class="c-d">┃</span>
+<span class="c-d">┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━╇━━━━━━━━━━┩</span>
+<span class="c-d">│</span> User temp files                    <span class="c-d">│ user-temp            │</span> 12,136 <span class="c-d">│</span> 537.0 MB <span class="c-d">│</span>
+<span class="c-d">│</span> Windows temp files <span class="c-y">(admin)</span>         <span class="c-d">│ windows-temp         │</span>      0 <span class="c-d">│</span>      0 B <span class="c-d">│</span>
+<span class="c-d">│</span> Thumbnail &amp; icon cache             <span class="c-d">│ thumbnail-cache      │</span>     30 <span class="c-d">│</span>  13.1 MB <span class="c-d">│</span>
+<span class="c-d">│</span> Browser caches                     <span class="c-d">│ browser-cache        │</span> 15,366 <span class="c-d">│</span>   1.2 GB <span class="c-d">│</span>
+<span class="c-d">│</span> Windows Update cache <span class="c-y">(admin)</span>       <span class="c-d">│ windows-update-cache │</span>      0 <span class="c-d">│</span>      0 B <span class="c-d">│</span>
+<span class="c-d">│</span> WinGet download cache              <span class="c-d">│ winget-cache         │</span>     72 <span class="c-d">│</span> 189.2 KB <span class="c-d">│</span>
+<span class="c-d">│</span> Archived event logs <span class="c-y">(admin)</span>        <span class="c-d">│ event-log-archives   │</span>      0 <span class="c-d">│</span>      0 B <span class="c-d">│</span>
+<span class="c-d">│</span> Defender detection history <span class="c-y">(admin)</span> <span class="c-d">│ defender-history     │</span>      0 <span class="c-d">│</span>      0 B <span class="c-d">│</span>
+<span class="c-d">│</span> OneDrive sync logs                 <span class="c-d">│ onedrive-logs        │</span>    199 <span class="c-d">│</span>  83.1 MB <span class="c-d">│</span>
+<span class="c-d">│</span> App crash dumps                    <span class="c-d">│ crash-dumps          │</span>      0 <span class="c-d">│</span>      0 B <span class="c-d">│</span>
+<span class="c-d">│</span> System crash reports <span class="c-y">(admin)</span>       <span class="c-d">│ system-crash-reports │</span>      0 <span class="c-d">│</span>      0 B <span class="c-d">│</span>
+<span class="c-d">├────────────────────────────────────┼──────────────────────┼────────┼──────────┤</span>
+<span class="c-d">│</span> <span class="c-b">Total reclaimable                 </span> <span class="c-d">│                      │</span>        <span class="c-d">│</span> <span class="c-b">  1.8 GB</span> <span class="c-d">│</span>
+<span class="c-d">└────────────────────────────────────┴──────────────────────┴────────┴──────────┘</span>
+
+Run <span class="c-cy">sifty junk clean</span> to preview removal (dry-run by default).</pre></div>
+  <div data-kind="pause" data-ms="1400"></div>
+  <div data-kind="cmd">sifty junk clean --apply</div>
+  <div data-kind="out"><pre class="t-out">Found <span class="c-b">27,803</span> items totalling <span class="c-b">1.8 GB</span>.</pre></div>
+  <div data-kind="ask">Move 27,803 items (1.8 GB) to the Recycle Bin? [y/N]: </div>
+  <div data-kind="out"><pre class="t-out"><span class="c-g">✓</span> Sent 27,803 items (1.8 GB) to the Recycle Bin.
+<span class="c-y">!</span> 41 item(s) skipped (in use or protected).</pre></div>
+  <div data-kind="pause" data-ms="1600"></div>
+  <div data-kind="cmd">sifty undo</div>
+  <div data-kind="ask">Restore 27762 item(s) from the junk clean at 2026-06-12 14:21:45? [y/N]: </div>
+  <div data-kind="out"><pre class="t-out"><span class="c-g">✓</span> Restored 27762 item(s).</pre></div>
+</template>
+
+<script src="app.js"></script>
+</body>
+</html>
