@@ -480,7 +480,7 @@ TOOLS: list[Tool] = [
     ),
     Tool(
         name="prune_worktrees",
-        description="Find and remove orphaned git worktrees left by AI coding agents (Claude Code, Cursor, etc.) in a repository.",
+        description="Find and remove orphaned git worktrees in a repository (stale checkouts whose branch or directory is gone).",
         parameters={
             "type": "object",
             "properties": {

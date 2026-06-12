@@ -133,7 +133,7 @@ def worktrees_cmd(
     apply: bool = typer.Option(False, "--apply", help="Prune git metadata and trash orphaned dirs."),
     yes: bool = typer.Option(False, "--yes", "-y", help="Skip the confirmation prompt."),
 ) -> None:
-    """Find and remove orphaned git worktrees left by AI coding agents."""
+    """Find and remove orphaned git worktrees in a repository."""
     from ...core.vcs import find_orphan_worktrees, prune_worktrees
 
     path = path.expanduser()

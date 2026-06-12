@@ -52,7 +52,7 @@ public release were development milestones.
 - **AI follow-up actions** — when an AI tool scan finds something, the result
   card offers a button that jumps to the screen that can act on it.
 - **Self-update** (`sifty selfupdate`) via PyPI + pipx.
-- **Git worktree cleanup** — detect and prune orphaned AI-agent worktrees
+- **Git worktree cleanup**: detect and prune orphaned git worktrees
   (`Worktrees` mode in Smart cleanup).
 - **VHD compaction** — compact WSL2/Hyper-V virtual disks via DISM.
 - Installer intelligence: the Downloads-installers junk category only flags
