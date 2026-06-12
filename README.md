@@ -1,39 +1,80 @@
 # Sifty
 
-An AI-assisted Windows maintenance CLI that **sifts the junk from the keep** —
-clean junk, analyze disks, manage apps, apply updates, and organize files. The AI
-runs **locally** via [Ollama], so nothing leaves your machine, and it only ever
-sees file *metadata* (names, sizes, paths), never file contents.
+> An AI-assisted Windows maintenance CLI + TUI that **sifts the junk from the keep**.
+
+![Python 3.11+](https://img.shields.io/badge/python-3.11%2B-blue)
+![Windows](https://img.shields.io/badge/platform-Windows%2010%2F11-0078d4)
+![License: MIT](https://img.shields.io/badge/license-MIT-green)
+![CI](https://github.com/aminezouaoui/sifty/actions/workflows/ci.yml/badge.svg)
+
+Clean junk, analyze disks, find duplicates, manage apps and startup programs,
+apply updates, prune dev artifacts and git worktrees, and organize files — from
+a scriptable CLI or a full-screen terminal UI. The optional AI assistant runs
+**locally** via [Ollama]: nothing leaves your machine, and it only ever sees
+file *metadata* (names, sizes, paths), never file contents.
+
+<!-- TODO: add a demo GIF of `sifty tui` here — it sells the project better
+     than anything below. `textual run --dev` + any screen recorder works. -->
 
 ## Safety first
 
-Sifty can delete files and change system state, so it is built to be hard to
-misuse:
+Sifty deletes files and changes system state, so it is built to be hard to misuse:
 
 - **Dry-run by default** — every destructive command previews what it would do.
   Real changes need an explicit `--apply`.
-- **Recycle Bin, never permanent delete** — all removals go through one `trash()`
-  function backed by Send2Trash.
+- **Recycle Bin, never permanent delete** — all removals go through one
+  `trash()` function backed by Send2Trash. `sifty undo` restores the last clean.
 - **Protected paths** — `C:\Windows`, `Program Files`, `ProgramData`, the drive
   root and your profile root are refused even with `--apply --yes`.
-- **Audit log** — every applied deletion is recorded in
-  `%APPDATA%\sifty\audit.log`.
+- **Audit log** — every applied deletion is recorded in `%APPDATA%\sifty\audit.log`.
+- **The AI never deletes anything** — it is advisory; high-risk tool calls
+  always require your approval.
 
-## Install (development)
+## How it compares
+
+| Feature | Sifty | CCleaner | Revo Uninstaller | WinDirStat |
+| --- | --- | --- | --- | --- |
+| Junk / cache cleaning | ✅ 11+ categories | ✅ | ➖ | ❌ |
+| Disk usage analysis | ✅ top-N + volumes | ➖ | ❌ | ✅ treemap |
+| Duplicate finder | ✅ SHA-256, NTFS-aware | ✅ (paid) | ❌ | ❌ |
+| App uninstall | ✅ via winget | ✅ | ✅ + leftovers | ❌ |
+| App updates | ✅ via winget | ✅ (paid) | ❌ | ❌ |
+| Startup manager | ✅ reversible | ✅ | ✅ | ❌ |
+| Dev artifact purge (node_modules, …) | ✅ | ❌ | ❌ | ❌ |
+| Git worktree / WSL2 VHD cleanup | ✅ | ❌ | ❌ | ❌ |
+| Local AI assistant | ✅ Ollama | ❌ | ❌ | ❌ |
+| Scriptable (JSON output) | ✅ | ❌ | ❌ | ❌ |
+| Recycle Bin + undo for everything | ✅ | ➖ | ➖ | n/a |
+| Price | Free, MIT | Freemium | Freemium | Free |
+
+Sifty is built **developer-first**: everything is scriptable, the engine is a
+reusable Python library, and it cleans the things developer machines actually
+accumulate (build artifacts, orphaned worktrees, bloated WSL2 disks).
+
+## Install
+
+```powershell
+# from source (recommended while pre-PyPI)
+git clone https://github.com/aminezouaoui/sifty && cd sifty
+pipx install --editable .      # or: pip install .
+
+sifty doctor                   # check admin rights, winget, Ollama
+```
+
+For development:
 
 ```powershell
 python -m venv .venv
 .\.venv\Scripts\python.exe -m pip install -e ".[dev]"
+.\.venv\Scripts\python.exe -m pytest -q
 ```
-
-This adds a `sifty` command (on PATH inside the venv at
-`.\.venv\Scripts\sifty.exe`).
 
 ## Usage
 
 ```powershell
-sifty doctor                 # check admin rights, winget, Ollama
-sifty version
+sifty checkup                # one read-only scan of everything: junk, updates,
+                             # orphans, stale files, disk space, startup
+sifty tui                    # the full-screen interactive app
 
 # Junk
 sifty junk scan              # show reclaimable space per category
@@ -45,11 +86,15 @@ sifty disk volumes           # used/free/total per volume
 sifty disk analyze C:\Users  # biggest folders/files under a path
 sifty disk duplicates D:\    # find duplicate files and wasted space
 
-# Apps
+# Apps & updates
 sifty apps list --by-size    # installed apps, largest first
+sifty apps orphans           # broken uninstall entries in the registry
 sifty apps uninstall "App"   # uninstall via winget (preview, then --apply)
+sifty update check           # available updates (winget)
+sifty update apply           # upgrade everything (asks first)
 
-# Smart cleanup
+# Developer cleanup
+sifty purge clean            # node_modules, dist, __pycache__, target, …
 sifty cleanup duplicates D:\Photos   # de-duplicate (keeps one copy each)
 sifty cleanup large C:\Users\you     # biggest files under a path
 sifty cleanup stale --days 180       # old items in Downloads
@@ -60,13 +105,9 @@ sifty startup disable "Spotify"      # reversible (sifty startup enable …)
 sifty services list                  # curated optional services + state
 sifty --admin services disable DiagTrack   # toggle one (needs admin)
 
-# Updates
-sifty update check           # list available updates (winget)
-sifty update apply           # upgrade everything (asks first)
-
 # History & undo
-sifty history                # what was cleaned + total space reclaimed over time
-sifty undo                   # restore the items from the most recent clean
+sifty history                # what was cleaned + total space reclaimed
+sifty undo                   # restore the most recent clean from the Recycle Bin
 
 # Organize files
 sifty organize preview C:\Users\you\Downloads --by type
@@ -76,20 +117,32 @@ sifty organize apply   C:\Users\you\Downloads --by date
 sifty ai status
 sifty ai ask "what can I safely delete on my C drive?" --path C:\
 
-# Scripting — machine-readable JSON on read-only commands
+# Scripting — JSON output on read-only commands (auto-enabled when piped)
+sifty --json checkup
 sifty --json disk volumes
-sifty --json junk scan
 sifty --json apps list --by-size
 ```
 
 Some operations (Windows temp, update cache, certain uninstalls) need an
-**Administrator** terminal — `sifty doctor` tells you if you're elevated.
+**Administrator** terminal — `sifty doctor` tells you if you're elevated, and
+`sifty --admin <cmd>` relaunches elevated via UAC.
 
-In the **TUI** (`sifty tui`): press **Ctrl+P** for the command palette (jump to
-any screen / run any action), use **Browse…** on the Disk screen to pick a folder,
-and on the Apps screen type to filter, click a header to sort, **Space** to mark
-rows, then bulk-uninstall. The **Reports** screen shows space reclaimed over time
-and an **Undo last clean** button (restores trashed items from the Recycle Bin).
+## The TUI
+
+`sifty tui` opens a full-screen app with a seven-section sidebar — Home,
+Clean, Disk, Apps, Monitor, Reports, AI:
+
+- **Home** — volume gauges, clickable stat cards, and a **Run checkup** button
+  that scans everything at once and offers one-tap fixes.
+- **Clean** — Junk / Purge / Optimize / Smart cleanup under one roof (tabs).
+- **Apps** — Installed / Updates / Startup / Services, with fuzzy filter,
+  sorting, and bulk uninstall.
+- **AI** — an agentic chat that can run scans itself (with your approval per
+  risk level) and offers action buttons on its findings.
+
+Press **Ctrl+P** for the command palette (jump to any screen), **F2** to
+elevate, **Space** to mark rows for bulk actions. The **Reports** screen shows
+space reclaimed over time with an **Undo last clean** button.
 
 ## AI setup (optional)
 
@@ -97,7 +150,7 @@ and an **Undo last clean** button (restores trashed items from the Recycle Bin).
 2. Pull the configured model: `ollama pull qwen2.5:3b`.
 3. `sifty ai status` should report "running".
 
-Configure the host/model in `%APPDATA%\sifty\config.toml`:
+Configure in `%APPDATA%\sifty\config.toml`:
 
 ```toml
 [ai]
@@ -113,25 +166,37 @@ include_downloads_installers = false
 
 ## Architecture
 
+Layered — thin frontends over a reusable engine, OS specifics quarantined:
+
 ```text
 src/sifty/
-├── cli.py            # Typer entry point, wires command groups
-├── config.py         # TOML config + %APPDATA% dir
-├── safety.py         # ★ protected paths, dry-run guard, trash()
-├── console.py        # shared Rich console + helpers
-├── commands/         # junk, disk, apps, updates, organize, ai_group
-└── ai/               # client.py (Ollama), advisor.py (prompts)
+├── cli/               # Typer entry point + one thin command module per group
+├── tui/               # Textual full-screen app (views call core, not cli)
+├── core/              # the engine: junk, disk, apps, updates, cleanup,
+│   │                  # startup, services, organize, checkup, history, …
+│   └── safety.py      # ★ protected paths, dry-run guard, trash(), audit log
+├── windows/           # OS primitives: winget, registry, UAC, Recycle Bin, DISM
+├── ai/                # Ollama client, advisor prompts, agentic tool loop
+└── infra/             # TOML config + rotating diagnostics log
 ```
 
-The command modules are the engine. A future GUI can call the same functions
-(e.g. `junk.scan`, `disk.find_duplicates`) without a rewrite.
+Frontends depend on `core`; `core` depends on `windows`/`infra`; nothing
+imports upward. A GUI could call the same engine functions (`junk.scan`,
+`disk.find_duplicates`, `checkup.run_checkup`) without a rewrite. See
+[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for the design rationale.
 
 ## Tests
 
 ```powershell
-.\.venv\Scripts\python.exe -m pytest
+.\.venv\Scripts\python.exe -m pytest -q    # 160+ tests, ~20 s
 ```
 
-The safety guardrails and the fragile winget parser are the most heavily tested.
+The safety guardrails are the most heavily tested code in the repo; the Windows
+environment is mocked so the suite also runs on CI. See
+[CONTRIBUTING.md](CONTRIBUTING.md) to get involved.
+
+## License
+
+[MIT](LICENSE) © Amine Zouaoui
 
 [Ollama]: https://ollama.com
