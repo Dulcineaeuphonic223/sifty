@@ -76,7 +76,7 @@ def test_purge_artifacts_apply(tmp_path, monkeypatch):
     art.mkdir()
     (art / "mod.pyc").write_bytes(b"x" * 300)
     trashed = []
-    # Patch safety.trash directly — that's the single deletion call site
+    # Patch safety.trash directly - that's the single deletion call site
     monkeypatch.setattr("sifty.core.purge.trash", lambda p, **kw: trashed.append(p))
     result = purge.purge_artifacts([art], dry_run=False)
     assert result.items == 1

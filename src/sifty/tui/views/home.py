@@ -2,7 +2,7 @@
 
 The checkup hero runs the read-only ``core.checkup`` suite; each finding
 renders with an action button that **fixes it right here** where that is safe
-(clean junk, clean stale downloads, apply updates — each behind the usual
+(clean junk, clean stale downloads, apply updates - each behind the usual
 confirm modal) and deep-links to the owning screen where a human should review
 first (registry orphans, disk space, startup). No duplicate stat cards: the
 sidebar already covers per-domain detail.
@@ -45,18 +45,18 @@ class HomeView(BaseView):
     def compose(self) -> ComposeResult:
         yield Static("Overview", classes="title")
         if is_admin():
-            yield Static("[green]●[/green] Administrator — all tasks available.",
+            yield Static("[green]●[/green] Administrator - all tasks available.",
                          classes="subtle")
         else:
             yield Static(
-                "[yellow]●[/yellow] Standard user — some tasks need elevation.  "
+                "[yellow]●[/yellow] Standard user - some tasks need elevation.  "
                 "[@click=app.elevate][b]Elevate (F2)[/b][/]",
                 classes="subtle",
             )
         with Panel(title="Health checkup", id="checkup-panel"):
             yield Static(
-                "Scan everything at once — junk, updates, registry orphans, stale "
-                "downloads, disk space, startup — then fix it from right here.",
+                "Scan everything at once - junk, updates, registry orphans, stale "
+                "downloads, disk space, startup - then fix it from right here.",
                 classes="subtle",
             )
             with Horizontal(classes="actions"):
@@ -104,21 +104,21 @@ class HomeView(BaseView):
         self._findings = {f.domain: f for f in findings}
         await results.remove_children()
         if not findings:
-            await results.mount(Static("Checkup failed — see `sifty logs`.", classes="subtle"))
+            await results.mount(Static("Checkup failed - see `sifty logs`.", classes="subtle"))
             return
         for f in findings:
             dot = _SEVERITY_DOT.get(f.severity, "")
             row = Horizontal(classes="finding-row", id=f"finding-{f.domain}")
             await results.mount(row)
             await row.mount(
-                Static(f"{dot} [b]{f.label}[/b] — {f.summary}", classes="finding-text")
+                Static(f"{dot} [b]{f.label}[/b] - {f.summary}", classes="finding-text")
             )
             if f.severity != "ok" and f.action_key:
                 label = _DIRECT_FIX_LABELS.get(f.domain, f.action_label or "Review…")
                 await row.mount(Button(label, id=f"fix-{f.domain}", classes="fix"))
         issues = sum(1 for f in findings if f.severity != "ok")
         verdict = (f"[b]{issues}[/b] item(s) worth a look." if issues
-                   else "[green]All clear — nothing needs attention.[/green]")
+                   else "[green]All clear - nothing needs attention.[/green]")
         await results.mount(Static(verdict, classes="status"))
 
     # -------------------------------------------------------------- direct fix
@@ -177,7 +177,7 @@ class HomeView(BaseView):
             row = self.query_one(f"#finding-{domain}", Horizontal)
         except Exception:
             return  # navigated away
-        row.query_one(".finding-text", Static).update(f"[b]{label}[/b] — {suffix}")
+        row.query_one(".finding-text", Static).update(f"[b]{label}[/b] - {suffix}")
         if drop_button:
             for btn in row.query(Button):
                 btn.remove()

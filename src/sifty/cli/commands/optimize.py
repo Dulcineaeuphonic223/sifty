@@ -1,4 +1,4 @@
-"""`sifty optimize` — non-destructive system cache cleanup."""
+"""`sifty optimize` - non-destructive system cache cleanup."""
 
 from __future__ import annotations
 
@@ -61,7 +61,7 @@ def run_cmd(
     skipped_admin = [op for op in ops if op.requires_admin and not admin]
 
     if not runnable:
-        warn("No operations to run (all require administrator rights — use F2 or --admin to elevate).")
+        warn("No operations to run (all require administrator rights - use F2 or --admin to elevate).")
         raise typer.Exit(1)
 
     if not apply:
@@ -71,7 +71,7 @@ def run_cmd(
         if skipped_admin:
             console.print(f"\n[dim]{len(skipped_admin)} admin-only operation(s) skipped "
                           f"(relaunch with --admin to include them).[/dim]")
-        console.print("\n[dim]Dry-run — re-run with --apply to execute.[/dim]")
+        console.print("\n[dim]Dry-run - re-run with --apply to execute.[/dim]")
         return
 
     if not confirm(f"Run {len(runnable)} optimization operation(s)?", assume_yes=yes):

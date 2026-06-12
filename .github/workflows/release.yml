@@ -1,7 +1,7 @@
 name: Release
 
 # Fires when you publish a GitHub Release (from a tag like v0.6.0).
-# Publishes the package to PyPI via Trusted Publishing (OIDC — no API token
+# Publishes the package to PyPI via Trusted Publishing (OIDC, no API token
 # stored anywhere) and attaches a standalone sifty.exe to the release.
 on:
   release:

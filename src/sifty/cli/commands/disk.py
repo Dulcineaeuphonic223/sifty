@@ -1,4 +1,4 @@
-"""`sifty disk` — volume usage, biggest items, duplicates."""
+"""`sifty disk` - volume usage, biggest items, duplicates."""
 
 from __future__ import annotations
 

@@ -40,7 +40,7 @@ def latest_version() -> str | None:
             return resp.json().get("info", {}).get("version")
         logger.debug("selfupdate: PyPI returned HTTP %s", resp.status_code)
     except Exception as exc:
-        # Offline / PyPI down is normal — log for `sifty logs`, don't crash.
+        # Offline / PyPI down is normal - log for `sifty logs`, don't crash.
         logger.debug("selfupdate: version check failed: %s", exc)
     return None
 
@@ -70,7 +70,7 @@ def apply_update() -> tuple[bool, str]:
         summary = msg[-1] if msg else ("Upgraded successfully." if ok else "Upgrade failed.")
         return ok, summary
     except FileNotFoundError:
-        return False, "pipx not found — is Sifty installed via pipx?"
+        return False, "pipx not found - is Sifty installed via pipx?"
     except subprocess.TimeoutExpired:
         return False, "Upgrade timed out after 120 s"
     except OSError as exc:

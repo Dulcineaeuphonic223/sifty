@@ -84,7 +84,7 @@ def _fake_client_tool_then_answer(monkeypatch, tool_name, args, answer):
 
 
 # ---------------------------------------------------------------------------
-# Agent loop — fallback (model ignores tools)
+# Agent loop - fallback (model ignores tools)
 # ---------------------------------------------------------------------------
 
 def test_plain_reply_is_fallback(monkeypatch):
@@ -97,7 +97,7 @@ def test_plain_reply_is_fallback(monkeypatch):
 
 
 # ---------------------------------------------------------------------------
-# Agent loop — single tool call auto-run (read risk)
+# Agent loop - single tool call auto-run (read risk)
 # ---------------------------------------------------------------------------
 
 def test_read_tool_runs_without_confirm(monkeypatch):
@@ -121,7 +121,7 @@ def test_read_tool_runs_without_confirm(monkeypatch):
 
 
 # ---------------------------------------------------------------------------
-# Agent loop — high-risk tool with autonomy=ask, confirm=deny
+# Agent loop - high-risk tool with autonomy=ask, confirm=deny
 # ---------------------------------------------------------------------------
 
 def test_high_tool_skipped_when_denied(monkeypatch):
@@ -139,7 +139,7 @@ def test_high_tool_skipped_when_denied(monkeypatch):
 
 
 # ---------------------------------------------------------------------------
-# Agent loop — high-risk tool with autonomy=full_auto runs without confirm
+# Agent loop - high-risk tool with autonomy=full_auto runs without confirm
 # ---------------------------------------------------------------------------
 
 def test_high_tool_runs_in_full_auto(monkeypatch):
@@ -159,7 +159,7 @@ def test_high_tool_runs_in_full_auto(monkeypatch):
 
 
 # ---------------------------------------------------------------------------
-# Agent loop — Ollama unavailable
+# Agent loop - Ollama unavailable
 # ---------------------------------------------------------------------------
 
 def test_ollama_unavailable_yields_final(monkeypatch):

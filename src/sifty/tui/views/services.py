@@ -111,6 +111,6 @@ class ServicesView(BaseView):
             self.load()
         else:
             self.app.notify(
-                f"Couldn't change '{name}' — needs administrator rights (F2).",
+                f"Couldn't change '{name}' - needs administrator rights (F2).",
                 severity="warning", title="Services",
             )

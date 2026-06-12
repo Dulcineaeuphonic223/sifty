@@ -19,17 +19,17 @@ from .base import BaseView
 logger = logging.getLogger("sifty.tui")
 
 # (icon, theme-hex-color) pairs for each row state
-_PENDING = ("·", "#9aa5ce")   # muted dot — not started yet
-_RUNNING = ("⟳", "#e0af68")   # yellow — in progress
-_OK      = ("✓", "#9ece6a")   # green  — succeeded
-_FAIL    = ("✗", "#f7768e")   # red    — failed
+_PENDING = ("·", "#9aa5ce")   # muted dot - not started yet
+_RUNNING = ("⟳", "#e0af68")   # yellow - in progress
+_OK      = ("✓", "#9ece6a")   # green  - succeeded
+_FAIL    = ("✗", "#f7768e")   # red    - failed
 
 
 class OptimizeView(BaseView):
     def compose(self) -> ComposeResult:
         yield Static("System optimize", classes="title")
         yield Static(
-            "Non-destructive cache cleanup — each operation is safe and rebuilds "
+            "Non-destructive cache cleanup - each operation is safe and rebuilds "
             "automatically. Admin-only items are greyed out when not elevated (F2).",
             classes="subtle",
         )
@@ -46,7 +46,7 @@ class OptimizeView(BaseView):
         sl = self.query_one("#optimize-list", SelectionList)
         for op in self._ops:
             if op.requires_admin and not self._admin:
-                label = f"{op.label}  [dim](needs admin — F2)[/dim]"
+                label = f"{op.label}  [dim](needs admin - F2)[/dim]"
                 sl.add_option(Selection(label, op.key, initial_state=False))
             else:
                 label = f"{op.label}  [dim]· {op.reversible}[/dim]"

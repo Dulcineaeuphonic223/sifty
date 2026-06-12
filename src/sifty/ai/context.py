@@ -1,7 +1,7 @@
 """Machine context snapshot for the AI advisor.
 
-Builds a compact, *metadata-only* description of the current system state —
-volumes, junk totals, recent history — that is injected into the AI system
+Builds a compact, *metadata-only* description of the current system state -
+volumes, junk totals, recent history - that is injected into the AI system
 prompt so it can give advice that is specific to *this* machine.
 
 Rules that must never change:
@@ -88,5 +88,5 @@ def _history_section() -> str:
         f"{human_size(summ['bytes_freed'])} reclaimed total"
     ]
     for r in runs[:3]:
-        lines.append(f"- {r.ts[:10]}: {r.action} — {human_size(r.bytes_freed)} freed")
+        lines.append(f"- {r.ts[:10]}: {r.action} - {human_size(r.bytes_freed)} freed")
     return "\n".join(lines)

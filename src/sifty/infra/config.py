@@ -2,7 +2,7 @@
 
 Config lives at ``%APPDATA%\\sifty\\config.toml``. Anything not set there
 falls back to :data:`DEFAULTS`. The config holds the AI model name, optional
-extra protected paths, and feature preferences — never anything secret.
+extra protected paths, and feature preferences - never anything secret.
 """
 
 from __future__ import annotations
@@ -21,15 +21,15 @@ DEFAULTS: dict[str, Any] = {
         "host": "http://localhost:11434",
         "model": "qwen2.5:3b",
         # Per-chunk wait while streaming a reply (and the initial model load),
-        # not the total answer length — see ai/client.py.
+        # not the total answer length - see ai/client.py.
         "timeout_seconds": 60,
         # How long Ollama keeps the model resident after a request, so the next
         # question doesn't pay the cold-load cost again.
         "keep_alive": "10m",
         # Agentic autonomy level: "ask" | "low_risk_auto" | "full_auto".
-        # "ask"           — confirm every mutating tool call (safe default).
-        # "low_risk_auto" — auto-run low-risk tools; confirm high-risk ones.
-        # "full_auto"     — run all tools without prompting (still uses Recycle Bin).
+        # "ask"           - confirm every mutating tool call (safe default).
+        # "low_risk_auto" - auto-run low-risk tools; confirm high-risk ones.
+        # "full_auto"     - run all tools without prompting (still uses Recycle Bin).
         "autonomy": "ask",
     },
     "safety": {
@@ -39,9 +39,9 @@ DEFAULTS: dict[str, Any] = {
     },
     "junk": {
         # Whether to offer leftover installers in Downloads as junk (off by
-        # default — those are often wanted).
+        # default - those are often wanted).
         "include_downloads_installers": False,
-        # Whether to offer Windows.old (post-upgrade leftover) — off by default
+        # Whether to offer Windows.old (post-upgrade leftover) - off by default
         # since it is a one-time cleanup and can be very large.
         "include_windows_old": False,
     },
@@ -135,7 +135,7 @@ def _toml_value(value: Any) -> str:
 def save_user_config(data: dict[str, Any], path: Path | None = None) -> None:
     """Write the user override dict back as TOML (two-level: sections of scalars).
 
-    Only the *overrides* are persisted — anything absent keeps its default, so
+    Only the *overrides* are persisted - anything absent keeps its default, so
     upgrading Sifty can still change defaults the user never touched.
     """
     target = path or config_path()
@@ -153,7 +153,7 @@ def save_user_config(data: dict[str, Any], path: Path | None = None) -> None:
 def default_template() -> str:
     """A fully-commented config template showing every setting and its default."""
     lines = [
-        "# Sifty configuration — uncomment a line to override its default.",
+        "# Sifty configuration - uncomment a line to override its default.",
         "# Run `sifty config show` to see the resolved values.",
         "",
     ]

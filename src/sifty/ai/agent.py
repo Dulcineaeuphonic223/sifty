@@ -6,12 +6,12 @@ autonomy level and a confirm callback), appends the results, and re-submits
 until the model produces a plain text answer.
 
 Autonomy levels:
-  ``ask``           — confirm every ``low`` or ``high`` risk tool before running.
-  ``low_risk_auto`` — auto-run ``low`` risk tools; confirm ``high`` ones.
-  ``full_auto``     — run all tools automatically (still routes through safety.trash).
+  ``ask``           - confirm every ``low`` or ``high`` risk tool before running.
+  ``low_risk_auto`` - auto-run ``low`` risk tools; confirm ``high`` ones.
+  ``full_auto``     - run all tools automatically (still routes through safety.trash).
 
 The active level is read from a small override file (set via the TUI) layered
-over the static ``ai.autonomy`` config default — see :func:`current_autonomy`.
+over the static ``ai.autonomy`` config default - see :func:`current_autonomy`.
 
 Models that don't emit ``tool_calls`` (not tool-capable) produce a plain reply
 on the first iteration; the agent yields that as a :class:`FallbackEvent` so
@@ -43,7 +43,7 @@ _VALID_LEVELS = ("ask", "low_risk_auto", "full_auto")
 TOOL_USE_NOTE = (
     "\n\nYou can call tools to inspect and maintain this machine. Tool results are "
     "shown to the user directly (large results as tables), so do NOT repeat the raw "
-    "data back — give a short, useful interpretation and a clear recommendation. "
+    "data back - give a short, useful interpretation and a clear recommendation. "
     "Before any destructive action (clean_junk, uninstall_app, apply_updates) explain "
     "what you're about to do; the user is asked to approve it."
 )
@@ -72,7 +72,7 @@ class ToolResultEvent:
 
 @dataclass
 class FinalAnswerEvent:
-    """The model produced a plain text reply — the agent is done."""
+    """The model produced a plain text reply - the agent is done."""
     text: str
 
 
@@ -154,7 +154,7 @@ def run(
     Defaults to always-refuse (safe) when not provided.
     """
     if confirm is None:
-        confirm = lambda _: False  # noqa: E731 — safe default, not interactive
+        confirm = lambda _: False  # noqa: E731 - safe default, not interactive
 
     active_tools = tools if tools is not None else TOOLS
     schemas = [t.to_ollama() for t in active_tools]
@@ -224,4 +224,4 @@ def run(
 
 def _confirm_prompt(tool: Tool, args: dict) -> str:
     args_str = ", ".join(f"{k}={v!r}" for k, v in args.items()) if args else ""
-    return f"Run {tool.name}({args_str}) — risk: {tool.risk}"
+    return f"Run {tool.name}({args_str}) - risk: {tool.risk}"

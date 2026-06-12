@@ -1,4 +1,4 @@
-"""`sifty cleanup` — duplicates, large files, and stale downloads."""
+"""`sifty cleanup` - duplicates, large files, and stale downloads."""
 
 from __future__ import annotations
 
@@ -49,7 +49,7 @@ def duplicates_cmd(
         f"[bold]{human_size(preview.bytes_freed)}[/bold] reclaimable."
     )
     if not apply:
-        console.print("[dim]Dry-run — re-run with --apply to remove the extra copies.[/dim]")
+        console.print("[dim]Dry-run - re-run with --apply to remove the extra copies.[/dim]")
         return
     if not confirm(f"Move {preview.items} redundant copies ({human_size(preview.bytes_freed)}) to the Recycle Bin?", assume_yes=yes):
         warn("Cancelled.")
@@ -116,7 +116,7 @@ def stale_cmd(
     console.print(table)
     console.print(f"\n[bold]{len(items)} items · {human_size(total)}[/bold]")
     if not apply:
-        console.print("[dim]Dry-run — re-run with --apply to remove them.[/dim]")
+        console.print("[dim]Dry-run - re-run with --apply to remove them.[/dim]")
         return
     if not confirm(f"Move {len(items)} stale items ({human_size(total)}) to the Recycle Bin?", assume_yes=yes):
         warn("Cancelled.")
@@ -161,7 +161,7 @@ def worktrees_cmd(
     console.print(table)
 
     if not apply:
-        console.print("[dim]Dry-run — re-run with --apply to prune and trash them.[/dim]")
+        console.print("[dim]Dry-run - re-run with --apply to prune and trash them.[/dim]")
         return
     if not confirm(f"Prune {len(orphans)} orphaned worktree(s)?", assume_yes=yes):
         warn("Cancelled.")

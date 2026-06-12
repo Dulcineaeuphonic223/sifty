@@ -34,7 +34,7 @@ def _browser_cache_roots(local: Path) -> list[Path]:
 
     Chromium-family browsers keep one cache per profile under ``User Data``
     (Default, Profile 1, …); Firefox keeps ``cache2`` per profile. Only cache
-    dirs are returned — never cookies, history, or passwords.
+    dirs are returned - never cookies, history, or passwords.
     """
     roots: list[Path] = []
 
@@ -330,7 +330,7 @@ def clean(
     """Trash the contents of selected junk categories.
 
     Returns a :class:`CleanResult`. ``trashed`` holds the original paths sent to
-    the Recycle Bin (empty on a dry-run) — used to record an undoable session.
+    the Recycle Bin (empty on a dry-run) - used to record an undoable session.
     ``extra_protected`` extends the built-in denylist for this call only.
     """
     config = config or load_config()
@@ -365,7 +365,7 @@ def clean(
                 ):
                     continue
                 # Smart installer check: only flag installers for apps that are
-                # already installed (conservative — skip if we can't match).
+                # already installed (conservative - skip if we can't match).
                 if (
                     cat.key == "downloads-installers"
                     and _installed_names is not None

@@ -1,4 +1,4 @@
-"""`sifty ai` — ask the local AI for maintenance advice (Ollama)."""
+"""`sifty ai` - ask the local AI for maintenance advice (Ollama)."""
 
 from __future__ import annotations
 

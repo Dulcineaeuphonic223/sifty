@@ -1,4 +1,4 @@
-"""`sifty update` — check and apply application updates (winget)."""
+"""`sifty update` - check and apply application updates (winget)."""
 
 from __future__ import annotations
 

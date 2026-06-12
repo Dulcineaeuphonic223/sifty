@@ -7,7 +7,7 @@ build/
 dist/
 *.spec
 
-# Claude Code — keep all Claude tooling files out of version control
+# Local assistant/editor config
 .claude/
 CLAUDE.md
 

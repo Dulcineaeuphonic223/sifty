@@ -1,4 +1,4 @@
-"""`sifty purge` — scan and remove dev artifact directories."""
+"""`sifty purge` - scan and remove dev artifact directories."""
 
 from __future__ import annotations
 
@@ -75,7 +75,7 @@ def clean_cmd(
         f"totalling [bold]{human_size(total)}[/bold]."
     )
     if not apply:
-        console.print("[dim]Dry-run — re-run with --apply to remove.[/dim]")
+        console.print("[dim]Dry-run - re-run with --apply to remove.[/dim]")
         return
 
     if not confirm(

@@ -1,4 +1,4 @@
-"""`sifty organize` — sort files in a folder by type or date."""
+"""`sifty organize` - sort files in a folder by type or date."""
 
 from __future__ import annotations
 
@@ -43,7 +43,7 @@ def _run(path: Path, scheme: str, *, apply: bool, yes: bool) -> None:
 
     moves = organize.plan_organization(path, scheme)
     if not moves:
-        success("Nothing to organize — all files are already sorted.")
+        success("Nothing to organize - all files are already sorted.")
         return
 
     table = Table(title=f"Organize '{path}' by {scheme} ({len(moves)} files)")
@@ -56,7 +56,7 @@ def _run(path: Path, scheme: str, *, apply: bool, yes: bool) -> None:
         console.print(f"[dim]…and {len(moves) - 50} more.[/dim]")
 
     if not apply:
-        console.print("[dim]Dry-run — nothing moved. Re-run with 'organize apply' to perform.[/dim]")
+        console.print("[dim]Dry-run - nothing moved. Re-run with 'organize apply' to perform.[/dim]")
         return
 
     if not confirm(f"Move {len(moves)} files into subfolders?", assume_yes=yes):
@@ -74,7 +74,7 @@ def undo_cmd(
     """Move the files from the last 'organize apply' back where they were."""
     pairs = organize.last_session()
     if not pairs:
-        warn("Nothing to undo — no organize session recorded.")
+        warn("Nothing to undo - no organize session recorded.")
         return
     if not confirm(f"Move {len(pairs)} file(s) back to their original locations?", assume_yes=yes):
         warn("Cancelled.")

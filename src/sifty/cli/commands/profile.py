@@ -1,4 +1,4 @@
-"""`sifty profile` — manage saved cleanup presets (junk categories)."""
+"""`sifty profile` - manage saved cleanup presets (junk categories)."""
 
 from __future__ import annotations
 

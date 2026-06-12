@@ -119,7 +119,7 @@ class AIView(BaseView):
             status.update(f"[green]●[/green] Ollama connected · model [b]{self._client.model}[/b]")
         else:
             status.update(
-                f"[yellow]●[/yellow] Ollama not reachable at {self._client.host} — "
+                f"[yellow]●[/yellow] Ollama not reachable at {self._client.host} - "
                 f"start it and run `ollama pull {self._client.model}`"
             )
 
@@ -138,7 +138,7 @@ class AIView(BaseView):
             self._resolve_approval(approved=event.button.has_class("approve"))
             return
         nav_key = getattr(event.button, "_nav_key", None)
-        if nav_key:  # a tool-result follow-up action — jump to the screen
+        if nav_key:  # a tool-result follow-up action - jump to the screen
             await self.app.show(nav_key)
 
     def _submit(self, question: str) -> None:
@@ -157,7 +157,7 @@ class AIView(BaseView):
     @work(thread=True, exclusive=True, group="ai-chat")
     def ask(self, messages: list[dict]) -> None:
         if not self._client.is_available():
-            self.app.call_from_thread(self._show_error, "AI unavailable — is Ollama running?")
+            self.app.call_from_thread(self._show_error, "AI unavailable - is Ollama running?")
             return
         system = self._ensure_system()
         full = [{"role": "system", "content": system}] + messages
@@ -211,7 +211,7 @@ class AIView(BaseView):
     def _confirm_blocking(self, prompt: str) -> bool:
         """Ask the user to approve a tool from the worker thread (blocks until answered).
 
-        Renders inline Run/Skip buttons in the chat — the AI's proposal reads
+        Renders inline Run/Skip buttons in the chat - the AI's proposal reads
         like a suggestion the user accepts in place, not a modal interruption.
         """
         done = threading.Event()
@@ -245,7 +245,7 @@ class AIView(BaseView):
         done.set()  # wake the agent worker
 
     def on_unmount(self) -> None:
-        # Navigating away with an approval pending: deny it (no widget work —
+        # Navigating away with an approval pending: deny it (no widget work -
         # the view is going away) so the agent worker doesn't block forever.
         if self._pending is not None:
             done, holder, _row = self._pending

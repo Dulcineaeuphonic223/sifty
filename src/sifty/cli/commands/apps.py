@@ -1,4 +1,4 @@
-"""`sifty apps` — list installed apps and startup items, uninstall via winget."""
+"""`sifty apps` - list installed apps and startup items, uninstall via winget."""
 
 from __future__ import annotations
 
@@ -43,7 +43,7 @@ def list_cmd(
     table.add_column("Publisher", style="dim")
     table.add_column("Size", justify="right")
     for a in items:
-        table.add_row(a.name, a.version, a.publisher, human_size(a.size_bytes) if a.size_bytes else "—")
+        table.add_row(a.name, a.version, a.publisher, human_size(a.size_bytes) if a.size_bytes else "-")
     console.print(table)
 
 
@@ -178,7 +178,7 @@ def leftovers_cmd(
     console.print(table)
 
     if not apply:
-        console.print("[dim]Dry-run — re-run with --apply to move them to the Recycle Bin.[/dim]")
+        console.print("[dim]Dry-run - re-run with --apply to move them to the Recycle Bin.[/dim]")
         return
     if not confirm(f"Move {len(items)} item(s) ({human_size(total)}) to the Recycle Bin?", assume_yes=yes):
         warn("Cancelled.")
