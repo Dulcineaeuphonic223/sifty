@@ -2,9 +2,12 @@
 
 from __future__ import annotations
 
+import logging
 import subprocess
 from importlib.metadata import PackageNotFoundError
 from importlib.metadata import version as pkg_version
+
+logger = logging.getLogger("sifty.core")
 
 __all__ = ["current_version", "latest_version", "check_update", "apply_update"]
 
@@ -35,8 +38,10 @@ def latest_version() -> str | None:
         resp = httpx.get(_PYPI_URL, timeout=5.0, follow_redirects=True)
         if resp.status_code == 200:
             return resp.json().get("info", {}).get("version")
-    except Exception:
-        pass
+        logger.debug("selfupdate: PyPI returned HTTP %s", resp.status_code)
+    except Exception as exc:
+        # Offline / PyPI down is normal — log for `sifty logs`, don't crash.
+        logger.debug("selfupdate: version check failed: %s", exc)
     return None
 
 

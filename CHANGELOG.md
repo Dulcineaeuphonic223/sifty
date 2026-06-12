@@ -4,6 +4,43 @@ All notable changes to Sifty. The format loosely follows
 [Keep a Changelog](https://keepachangelog.com); versions before the first
 public release were development milestones.
 
+## [0.6.0] — 2026-06
+
+### Added
+
+- **Uninstall leftovers scanner** — `sifty apps leftovers "App"` finds the
+  directories and Start Menu shortcuts an uninstaller left behind in
+  AppData/ProgramData (conservative exact-name matching, never inside
+  Windows/Program Files). The CLI reports leftovers automatically after an
+  uninstall; the Apps TUI offers to clean them right after a bulk uninstall.
+- **`sifty config`** — show / get / set / reset / edit the configuration
+  without hunting through `%APPDATA%` (writes only your overrides).
+- **Browser cache coverage** — every Chrome/Edge/Brave/Vivaldi profile
+  (Cache, Code Cache, GPUCache) plus Firefox `cache2`; cache dirs only,
+  never cookies/history/passwords.
+- **Crash-report junk categories** — per-user crash dumps + WER queues, and
+  system WER/kernel minidumps (admin).
+- **`sifty organize undo`** — moves the last organize session's files back
+  and removes the emptied folders.
+
+### Changed
+
+- **Home** is now the checkup: findings carry direct fix buttons (clean junk,
+  clean stale downloads, apply updates — each behind the usual confirm) and
+  the redundant stat-card grid is gone.
+- **AI chat approvals are inline** — Run/Skip buttons in the transcript
+  instead of a pop-up modal; quick-action buttons removed.
+- **Startup screen** matches the Services pattern: highlight a row, then
+  Enable/Disable buttons — clicking a row no longer toggles it instantly.
+- Bare group commands (`sifty junk`, `sifty disk`, …) print their full help
+  instead of a "try --help" hint.
+
+### Fixed
+
+- Junk clean now reports how many items were skipped and why (in use / need
+  admin) instead of silently looking like it did nothing on a re-clean.
+- Self-update version-check failures are logged instead of swallowed.
+
 ## [0.5.0] — 2026-06
 
 ### Added
@@ -44,7 +81,7 @@ public release were development milestones.
 
 ## [0.3.0] — 2026
 
-- Dev artifact purge (node_modules, dist, __pycache__, …), system optimize
+- Dev artifact purge (`node_modules`, `dist`, `__pycache__`, …), system optimize
   (DNS flush, thumbnail/prefetch/update-cache rebuild, DISM component
   cleanup), five new junk categories.
 

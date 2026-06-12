@@ -5,7 +5,7 @@
 ![Python 3.11+](https://img.shields.io/badge/python-3.11%2B-blue)
 ![Windows](https://img.shields.io/badge/platform-Windows%2010%2F11-0078d4)
 ![License: MIT](https://img.shields.io/badge/license-MIT-green)
-![CI](https://github.com/aminezouaoui/sifty/actions/workflows/ci.yml/badge.svg)
+![CI](https://github.com/Vortrix5/sifty/actions/workflows/ci.yml/badge.svg)
 
 Clean junk, analyze disks, find duplicates, manage apps and startup programs,
 apply updates, prune dev artifacts and git worktrees, and organize files — from
@@ -37,7 +37,7 @@ Sifty deletes files and changes system state, so it is built to be hard to misus
 | Junk / cache cleaning | ✅ 11+ categories | ✅ | ➖ | ❌ |
 | Disk usage analysis | ✅ top-N + volumes | ➖ | ❌ | ✅ treemap |
 | Duplicate finder | ✅ SHA-256, NTFS-aware | ✅ (paid) | ❌ | ❌ |
-| App uninstall | ✅ via winget | ✅ | ✅ + leftovers | ❌ |
+| App uninstall + leftover scan | ✅ winget + leftovers | ✅ | ✅ + leftovers | ❌ |
 | App updates | ✅ via winget | ✅ (paid) | ❌ | ❌ |
 | Startup manager | ✅ reversible | ✅ | ✅ | ❌ |
 | Dev artifact purge (node_modules, …) | ✅ | ❌ | ❌ | ❌ |
@@ -55,7 +55,7 @@ accumulate (build artifacts, orphaned worktrees, bloated WSL2 disks).
 
 ```powershell
 # from source (recommended while pre-PyPI)
-git clone https://github.com/aminezouaoui/sifty && cd sifty
+git clone https://github.com/Vortrix5/sifty && cd sifty
 pipx install --editable .      # or: pip install .
 
 sifty doctor                   # check admin rights, winget, Ollama
@@ -90,6 +90,7 @@ sifty disk duplicates D:\    # find duplicate files and wasted space
 sifty apps list --by-size    # installed apps, largest first
 sifty apps orphans           # broken uninstall entries in the registry
 sifty apps uninstall "App"   # uninstall via winget (preview, then --apply)
+sifty apps leftovers "App"   # what the uninstaller left behind (then --apply)
 sifty update check           # available updates (winget)
 sifty update apply           # upgrade everything (asks first)
 
@@ -112,6 +113,12 @@ sifty undo                   # restore the most recent clean from the Recycle Bi
 # Organize files
 sifty organize preview C:\Users\you\Downloads --by type
 sifty organize apply   C:\Users\you\Downloads --by date
+sifty organize undo          # put the last organize's files back
+
+# Configuration
+sifty config                 # all settings + which ones you've overridden
+sifty config set ai.model "llama3.2:3b"
+sifty config edit            # open config.toml in your editor
 
 # AI (requires Ollama running)
 sifty ai status
@@ -132,13 +139,15 @@ Some operations (Windows temp, update cache, certain uninstalls) need an
 `sifty tui` opens a full-screen app with a seven-section sidebar — Home,
 Clean, Disk, Apps, Monitor, Reports, AI:
 
-- **Home** — volume gauges, clickable stat cards, and a **Run checkup** button
-  that scans everything at once and offers one-tap fixes.
+- **Home** — volume gauges and a **Run checkup** button that scans everything
+  at once; findings come with buttons that fix them right there (clean junk,
+  clean stale downloads, apply updates — each behind a confirm).
 - **Clean** — Junk / Purge / Optimize / Smart cleanup under one roof (tabs).
 - **Apps** — Installed / Updates / Startup / Services, with fuzzy filter,
-  sorting, and bulk uninstall.
-- **AI** — an agentic chat that can run scans itself (with your approval per
-  risk level) and offers action buttons on its findings.
+  sorting, bulk uninstall, and an automatic leftover scan after uninstalling.
+- **AI** — an agentic chat: tool runs it proposes show **Run/Skip buttons
+  inline in the conversation**, and scan results carry follow-up action
+  buttons.
 
 Press **Ctrl+P** for the command palette (jump to any screen), **F2** to
 elevate, **Space** to mark rows for bulk actions. The **Reports** screen shows
