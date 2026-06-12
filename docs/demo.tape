@@ -1,6 +1,10 @@
-# VHS tape — reproducible terminal GIF for the README.
-# Install VHS (https://github.com/charmbracelet/vhs), then run:  vhs docs/demo.tape
-# Produces docs/demo.gif. Tweak the Sleep values to taste.
+# Terminal GIF script for the README.
+#
+# NOTE: VHS is *nix-oriented and Sifty is Windows-only, so VHS is awkward here.
+# The practical path on Windows is to RECORD MANUALLY with ScreenToGif
+# (winget install NickeManarin.ScreenToGif) while running the commands below in
+# Windows Terminal — this file then doubles as the shot-list / timing guide.
+# If you do have VHS working: vhs docs/demo.tape  ->  docs/demo.gif
 
 Output docs/demo.gif
 
