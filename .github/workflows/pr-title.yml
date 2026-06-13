@@ -9,6 +9,8 @@ permissions:
 
 jobs:
   lint-title:
+    # Bots (e.g. Dependabot) don't follow the human title convention.
+    if: ${{ !endsWith(github.actor, '[bot]') }}
     runs-on: ubuntu-latest
     steps:
       - name: Check the PR title follows the Sifty convention
