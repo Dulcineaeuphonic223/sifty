@@ -48,7 +48,7 @@
     <a href="#features">Features</a>
     <a href="#demo">Demo</a>
     <a href="#safety">Safety</a>
-    <a href="#tui">TUI</a>
+    <a href="#compare">Compare</a>
     <a href="#install">Install</a>
     <a href="guides/">Guides</a>
   </nav>
@@ -284,6 +284,40 @@ Move 27,803 items (1.8 GB) to the Recycle Bin? [y/N]: y
     audit(<span class="c-y">f"TRASH {path}"</span>)
     <span class="c-mag">return</span> <span class="c-g">True</span></pre>
     </div>
+  </section>
+
+  <!-- Compare -->
+  <section id="compare" class="section reveal">
+    <h2>how it compares</h2>
+    <p class="section-sub">An honest look at where Sifty fits next to the usual Windows cleanup tools.</p>
+    <div class="table-wrap">
+      <table class="cmp-table">
+        <thead>
+          <tr><th>Feature</th><th>Sifty</th><th>CCleaner</th><th>BleachBit</th><th>Revo</th><th>WinDirStat</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Junk &amp; cache cleaning</td><td class="cmp-yes">&#10003;</td><td class="cmp-yes">&#10003;</td><td class="cmp-yes">&#10003;</td><td class="cmp-mid">~</td><td class="cmp-no">&#10007;</td></tr>
+          <tr><td>Disk usage analysis</td><td class="cmp-yes">&#10003;</td><td class="cmp-mid">~</td><td class="cmp-no">&#10007;</td><td class="cmp-no">&#10007;</td><td class="cmp-yes">&#10003;</td></tr>
+          <tr><td>Duplicate finder</td><td class="cmp-yes">&#10003;</td><td class="cmp-mid">paid</td><td class="cmp-no">&#10007;</td><td class="cmp-no">&#10007;</td><td class="cmp-no">&#10007;</td></tr>
+          <tr><td>App uninstall + leftovers</td><td class="cmp-yes">&#10003;</td><td class="cmp-yes">&#10003;</td><td class="cmp-no">&#10007;</td><td class="cmp-yes">&#10003;</td><td class="cmp-no">&#10007;</td></tr>
+          <tr><td>App updates</td><td class="cmp-yes">&#10003;</td><td class="cmp-mid">paid</td><td class="cmp-no">&#10007;</td><td class="cmp-no">&#10007;</td><td class="cmp-no">&#10007;</td></tr>
+          <tr><td>Startup manager</td><td class="cmp-yes">&#10003;</td><td class="cmp-yes">&#10003;</td><td class="cmp-no">&#10007;</td><td class="cmp-yes">&#10003;</td><td class="cmp-no">&#10007;</td></tr>
+          <tr><td>Dev cleanup (node_modules, WSL2)</td><td class="cmp-yes">&#10003;</td><td class="cmp-no">&#10007;</td><td class="cmp-no">&#10007;</td><td class="cmp-no">&#10007;</td><td class="cmp-no">&#10007;</td></tr>
+          <tr><td>Local AI assistant</td><td class="cmp-yes">&#10003;</td><td class="cmp-no">&#10007;</td><td class="cmp-no">&#10007;</td><td class="cmp-no">&#10007;</td><td class="cmp-no">&#10007;</td></tr>
+          <tr><td>Scriptable (JSON output)</td><td class="cmp-yes">&#10003;</td><td class="cmp-no">&#10007;</td><td class="cmp-mid">CLI</td><td class="cmp-no">&#10007;</td><td class="cmp-no">&#10007;</td></tr>
+          <tr><td>Recycle Bin + undo</td><td class="cmp-yes">&#10003;</td><td class="cmp-mid">~</td><td class="cmp-no">&#10007;</td><td class="cmp-mid">~</td><td class="cmp-mid">n/a</td></tr>
+          <tr><td>Open source</td><td class="cmp-yes">&#10003; MIT</td><td class="cmp-no">&#10007;</td><td class="cmp-yes">&#10003; GPL</td><td class="cmp-no">&#10007;</td><td class="cmp-yes">&#10003;</td></tr>
+          <tr><td>Price</td><td class="cmp-yes">Free</td><td class="cmp-mid">Freemium</td><td class="cmp-yes">Free</td><td class="cmp-mid">Freemium</td><td class="cmp-yes">Free</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="section-foot">
+      BleachBit is the closest open-source option: it is cross-platform and can
+      securely shred files, where Sifty stays Windows-only but adds undo,
+      duplicates, app management and developer cleanups. Full breakdowns:
+      <a href="alternatives/ccleaner.html">vs CCleaner</a> &middot;
+      <a href="alternatives/bleachbit.html">vs BleachBit</a>.
+    </p>
   </section>
 
   <!-- TUI -->

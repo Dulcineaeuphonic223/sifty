@@ -52,24 +52,29 @@ Sifty deletes files and changes system state, so it is built to be hard to misus
 
 ## How it compares
 
-| Feature | Sifty | CCleaner | Revo Uninstaller | WinDirStat |
-| --- | --- | --- | --- | --- |
-| Junk / cache cleaning | ✅ 11+ categories | ✅ | ➖ | ❌ |
-| Disk usage analysis | ✅ top-N + volumes | ➖ | ❌ | ✅ treemap |
-| Duplicate finder | ✅ SHA-256, NTFS-aware | ✅ (paid) | ❌ | ❌ |
-| App uninstall + leftover scan | ✅ winget + leftovers | ✅ | ✅ + leftovers | ❌ |
-| App updates | ✅ via winget | ✅ (paid) | ❌ | ❌ |
-| Startup manager | ✅ reversible | ✅ | ✅ | ❌ |
-| Dev artifact purge (node_modules, …) | ✅ | ❌ | ❌ | ❌ |
-| Git worktree / WSL2 VHD cleanup | ✅ | ❌ | ❌ | ❌ |
-| Local AI assistant | ✅ Ollama | ❌ | ❌ | ❌ |
-| Scriptable (JSON output) | ✅ | ❌ | ❌ | ❌ |
-| Recycle Bin + undo for everything | ✅ | ➖ | ➖ | n/a |
-| Price | Free, MIT | Freemium | Freemium | Free |
+| Feature | Sifty | CCleaner | BleachBit | Revo Uninstaller | WinDirStat |
+| --- | --- | --- | --- | --- | --- |
+| Junk / cache cleaning | ✅ 11+ categories | ✅ | ✅ | ➖ | ❌ |
+| Disk usage analysis | ✅ top-N + volumes | ➖ | ❌ | ❌ | ✅ treemap |
+| Duplicate finder | ✅ SHA-256, NTFS-aware | ✅ (paid) | ❌ | ❌ | ❌ |
+| App uninstall + leftover scan | ✅ winget + leftovers | ✅ | ❌ | ✅ + leftovers | ❌ |
+| App updates | ✅ via winget | ✅ (paid) | ❌ | ❌ | ❌ |
+| Startup manager | ✅ reversible | ✅ | ❌ | ✅ | ❌ |
+| Dev artifact purge (node_modules, …) | ✅ | ❌ | ❌ | ❌ | ❌ |
+| Git worktree / WSL2 VHD cleanup | ✅ | ❌ | ❌ | ❌ | ❌ |
+| Local AI assistant | ✅ Ollama | ❌ | ❌ | ❌ | ❌ |
+| Scriptable (JSON output) | ✅ | ❌ | ➖ CLI | ❌ | ❌ |
+| Recycle Bin + undo for everything | ✅ | ➖ | ❌ permanent | ➖ | n/a |
+| Open source | ✅ MIT | ❌ | ✅ GPL | ❌ | ✅ |
+| Price | Free, MIT | Freemium | Free | Freemium | Free |
 
 Sifty is built **developer-first**: everything is scriptable, the engine is a
 reusable Python library, and it cleans the things developer machines actually
 accumulate (build artifacts, orphaned worktrees, bloated WSL2 disks).
+[BleachBit](https://sifty.tech/alternatives/bleachbit.html) is the closest
+open-source cousin; it is cross-platform and can securely shred files, while
+Sifty stays Windows-only, sends everything to the Recycle Bin with full undo,
+and adds duplicates, app management and developer cleanups.
 
 ## Install
 
